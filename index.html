@@ -1,0 +1,870 @@
+<!DOCTYPE html>  
+<html lang="en">  
+<head>  
+<meta charset="UTF-8">  
+<meta name="viewport" content="width=device-width, initial-scale=1">  
+<meta name="theme-color" content="#075e54">  
+<title>Where We Belong</title>  
+<style>  
+* { box-sizing: border-box; }  
+  
+body {  
+  margin: 0;  
+  font-family: Arial, sans-serif;  
+  background: #e9edef;  
+  color: #111b21;  
+  min-height: 100vh;  
+}  
+  
+header {  
+  background: #075e54;  
+  color: white;  
+  padding: 17px 20px;  
+}  
+  
+h1 {  
+  margin: 0 0 5px;  
+  font-size: 23px;  
+  font-weight: 600;  
+}  
+  
+header p {  
+  margin: 0;  
+  font-size: 13px;  
+  color: #d8f3eb;  
+}  
+  
+main {  
+  max-width: 720px;  
+  margin: 18px auto;  
+  padding: 10px;  
+}  
+  
+.panel {  
+  background: #fff;  
+  border: 1px solid #d8dfe3;  
+  border-radius: 10px;  
+  padding: 16px;  
+  box-shadow: 0 2px 5px #0000000b;  
+}  
+  
+h2 {  
+  font-size: 19px;  
+  font-weight: 600;  
+}  
+  
+input, button {  
+  font: inherit;  
+  border-radius: 7px;  
+  padding: 13px;  
+  width: 100%;  
+  margin-top: 10px;  
+}  
+  
+input {  
+  border: 1px solid #d1d7db;  
+  background: #fff;  
+  color: #111b21;  
+}  
+  
+input:focus {  
+  outline: 2px solid #a4d9cb;  
+  border-color: #008f75;  
+}  
+  
+button {  
+  border: none;  
+  background: #008f75;  
+  color: white;  
+  cursor: pointer;  
+  font-weight: 600;  
+}  
+  
+button:disabled {  
+  opacity: .55;  
+  cursor: not-allowed;  
+}  
+  
+.small {  
+  font-size: 12px;  
+  color: #667781;  
+  text-align: center;  
+}  
+  
+#chat { display: none; }  
+  
+#chatHeader {  
+  display: flex;  
+  align-items: center;  
+  justify-content: space-between;  
+  gap: 10px;  
+}  
+  
+#chatHeader h2 {  
+  margin: 0 0 6px;  
+}  
+  
+#chatHeader .small {  
+  text-align: left;  
+  margin: 0;  
+}  
+  
+#logout {  
+  width: auto;  
+  margin: 0;  
+  padding: 10px 12px;  
+  background: #e9edef;  
+  color: #37474f;  
+}  
+  
+#status {  
+  text-align: center;  
+  color: #008f75;  
+  font-size: 12px;  
+  min-height: 18px;  
+  margin-top: 12px;  
+}  
+  
+#messages {  
+  height: 50vh;  
+  min-height: 280px;  
+  max-height: 520px;  
+  overflow-y: auto;  
+  padding: 12px;  
+  margin-top: 8px;  
+  background: #f7f9fa;  
+  border: 1px solid #e3e8eb;  
+  border-radius: 7px;  
+}  
+  
+.message {  
+  max-width: 85%;  
+  width: fit-content;  
+  padding: 10px 12px;  
+  margin: 9px 0;  
+  border-radius: 9px;  
+  background: #fff;  
+  border: 1px solid #e4e8eb;  
+  overflow-wrap: anywhere;  
+  box-shadow: 0 1px 1px #00000008;  
+  position: relative;  
+}  
+  
+.mine {  
+  margin-left: auto;  
+  background: #d9fdd3;  
+  border-color: #d9fdd3;  
+}  
+  
+.meta {  
+  font-size: 11px;  
+  color: #667781;  
+  margin-bottom: 5px;  
+  display: flex;  
+  justify-content: space-between;  
+  gap: 10px;  
+}  
+  
+.reply-btn {  
+  background: none;  
+  border: none;  
+  color: #008f75;  
+  font-size: 11px;  
+  padding: 0;  
+  margin: 0;  
+  width: auto;  
+  cursor: pointer;  
+}  
+  
+.quoted-box {  
+  background: rgba(0,0,0,0.05);  
+  border-left: 3px solid #008f75;  
+  padding: 4px 8px;  
+  margin-bottom: 6px;  
+  border-radius: 4px;  
+  font-size: 13px;  
+  color: #555;  
+}  
+  
+.messageText {  
+  white-space: pre-wrap;  
+  line-height: 1.5;  
+  font-size: 15px;  
+}  
+  
+.message-img {  
+  max-width: 100%;  
+  max-height: 250px;  
+  border-radius: 6px;  
+  margin-top: 5px;  
+  display: block;  
+  cursor: pointer;  
+}  
+  
+#typingStatus {  
+  min-height: 17px;  
+  font-size: 12px;  
+  color: #008f75;  
+  padding: 4px 2px;  
+}  
+  
+#replyPreview {  
+  display: none;  
+  background: #f0f2f5;  
+  padding: 8px 12px;  
+  border-left: 4px solid #008f75;  
+  margin-bottom: 6px;  
+  border-radius: 4px;  
+  font-size: 13px;  
+  position: relative;  
+}  
+  
+#replyPreview span {  
+  display: block;  
+  font-weight: bold;  
+  color: #008f75;  
+  font-size: 11px;  
+}  
+  
+#cancelReply {  
+  position: absolute;  
+  right: 8px;  
+  top: 6px;  
+  background: none;  
+  border: none;  
+  color: #667781;  
+  font-size: 14px;  
+  cursor: pointer;  
+  width: auto;  
+  padding: 0;  
+  margin: 0;  
+}  
+  
+#sendForm {  
+  margin-top: 5px;  
+}  
+  
+#sendRow {  
+  display: flex;  
+  gap: 8px;  
+  align-items: center;  
+}  
+  
+#fileButton {  
+  background: #e9edef;  
+  color: #37474f;  
+  width: 44px;  
+  height: 44px;  
+  border-radius: 50%;  
+  padding: 0;  
+  margin: 0;  
+  display: flex;  
+  align-items: center;  
+  justify-content: center;  
+  flex-shrink: 0;  
+  font-size: 18px;  
+}  
+  
+#messageInput {  
+  flex: 1;  
+  min-width: 0;  
+  border-radius: 24px;  
+  padding: 12px 15px;  
+  margin-top: 0;  
+}  
+  
+#sendButton {  
+  width: 78px;  
+  flex-shrink: 0;  
+  border-radius: 24px;  
+  margin-top: 0;  
+}  
+  
+#notifBanner {  
+  background: #e2fef0;  
+  border: 1px solid #a4d9cb;  
+  padding: 8px 12px;  
+  border-radius: 6px;  
+  font-size: 13px;  
+  text-align: center;  
+  margin-bottom: 8px;  
+  cursor: pointer;  
+  color: #075e54;  
+}  
+  
+#chatStatus {  
+  min-height: 16px;  
+}  
+  
+footer {  
+  text-align: center;  
+  padding: 12px;  
+  font-size: 12px;  
+  color: #667781;  
+}  
+  
+@media (max-width: 480px) {  
+  header { padding: 15px; }  
+  h1 { font-size: 21px; }  
+  main { margin: 7px auto; padding: 7px; }  
+  .panel { padding: 12px; }  
+  #messages { height: 46vh; min-height: 240px; }  
+  .message { max-width: 91%; }  
+}  
+</style>  
+</head>  
+<body>  
+<header>  
+  <h1>Where We Belong</h1>  
+  <p>Just us, one message at a time.</p>  
+</header>  
+
+<main>  
+  <section class="panel" id="login">  
+    <h2 style="text-align:center">Welcome back</h2>  
+    <p class="small">Sign in to enter your private chat.</p>  
+    <form id="loginForm">  
+      <input id="email" type="email" placeholder="Email address" autocomplete="username" required>  
+      <input id="password" type="password" placeholder="Password" autocomplete="current-password" required>  
+      <button id="loginButton" type="submit">Log in</button>  
+    </form>  
+    <p id="loginStatus" class="small" role="status"></p>  
+  </section>    
+
+  <section class="panel" id="chat">  
+    <div id="chatHeader">  
+      <div>  
+        <h2>Our conversation</h2>  
+        <p class="small" id="partnerStatus">Checking connection...</p>  
+      </div>  
+      <button id="logout" type="button">Log out</button>  
+    </div>  
+
+    <div id="status" role="status"></div>  
+    <div id="notifBanner" style="display:none;" onclick="requestNotificationPermission()">🔔 Tap here to enable notifications for new messages</div>  
+    <div id="messages" aria-live="polite"></div>  
+    <div id="typingStatus"></div>  
+
+    <div id="replyPreview">  
+      <span id="replyPreviewUser">Replying</span>  
+      <p id="replyPreviewText" style="margin:2px 0 0; font-size:12px; color:#333;"></p>  
+      <button id="cancelReply" type="button">&times;</button>  
+    </div>  
+
+    <form id="sendForm">  
+      <div id="sendRow">  
+        <button type="button" id="fileButton" title="Send Photo">📷</button>  
+        <input type="file" id="fileInput" accept="image/*" style="display:none;">  
+        <input id="messageInput" placeholder="Write a message..." maxlength="2000" autocomplete="off">  
+        <button id="sendButton" type="submit">Send</button>  
+      </div>  
+    </form>  
+
+    <p id="chatStatus" class="small" role="status"></p>  
+  </section>  
+</main>  
+
+<footer>Where We Belong</footer>  
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>  
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>  
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>  
+<script>  
+const firebaseConfig = {  
+  apiKey: "AIzaSyBpa8Mr_4qdt7ETUtiI0wZDS0OW-EZ1884",  
+  authDomain: "where-we-belong-b25b1.firebaseapp.com",  
+  databaseURL: "https://where-we-belong-b25b1-default-rtdb.europe-west1.firebasedatabase.app",  
+  projectId: "where-we-belong-b25b1",  
+  storageBucket: "where-we-belong-b25b1.firebasestorage.app",  
+  messagingSenderId: "803513103263",  
+  appId: "1:803513103263:web:4252a04ddbbd6d1ac1c3aa",  
+  measurementId: "G-5QSSTNZQ7H"  
+};  
+  
+firebase.initializeApp(firebaseConfig);  
+  
+const auth = firebase.auth();  
+const db = firebase.database();  
+  
+const loginPanel = document.getElementById("login");  
+const chatPanel = document.getElementById("chat");  
+const loginStatus = document.getElementById("loginStatus");  
+const chatStatus = document.getElementById("chatStatus");  
+const messagesBox = document.getElementById("messages");  
+const messageInput = document.getElementById("messageInput");  
+const sendButton = document.getElementById("sendButton");  
+const connectionStatus = document.getElementById("status");  
+const partnerStatus = document.getElementById("partnerStatus");  
+const typingStatus = document.getElementById("typingStatus");  
+const fileButton = document.getElementById("fileButton");  
+const fileInput = document.getElementById("fileInput");  
+const notifBanner = document.getElementById("notifBanner");  
+const replyPreview = document.getElementById("replyPreview");  
+const replyPreviewUser = document.getElementById("replyPreviewUser");  
+const replyPreviewText = document.getElementById("replyPreviewText");  
+const cancelReply = document.getElementById("cancelReply");  
+  
+let messagesRef = null;  
+let messagesListener = null;  
+let partnerRef = null;  
+let partnerListener = null;  
+let typingRef = null;  
+let typingListener = null;  
+let myTypingRef = null;  
+let presenceRef = null;  
+let connectedRef = null;  
+let typingTimer = null;  
+let currentUid = null;  
+let activeReply = null;  
+let editingMessageKey = null;  
+let initialLoadDone = false;  
+
+function getPartnerUid() {  
+  return currentUid === "THUCBdlzXdf24tJglhi8jYSVFaR2" ? "ZFepStVL7uMwTi6zrOP8tx3Oyuh1" : "THUCBdlzXdf24tJglhi8jYSVFaR2";  
+}  
+  
+function showLogin(message = "") {  
+  loginPanel.style.display = "block";  
+  chatPanel.style.display = "none";  
+  loginStatus.textContent = message;  
+}  
+  
+function showChat() {  
+  loginPanel.style.display = "none";  
+  chatPanel.style.display = "block";  
+  startChatFeatures();  
+  checkNotificationPermissionUI();  
+}  
+  
+function stopListener(ref, event, callback) {  
+  if (ref && callback) ref.off(event, callback);  
+}  
+  
+function stopChatFeatures() {  
+  stopListener(messagesRef, "value", messagesListener);  
+  stopListener(partnerRef, "value", partnerListener);  
+  stopListener(typingRef, "value", typingListener);  
+  stopListener(connectedRef, "value", null);  
+  
+  if (typingTimer) clearTimeout(typingTimer);  
+  
+  if (myTypingRef) myTypingRef.remove().catch(() => {});  
+  if (presenceRef) presenceRef.onDisconnect().cancel().catch(() => {});  
+  if (presenceRef) presenceRef.remove().catch(() => {});  
+  
+  messagesRef = null;  
+  messagesListener = null;  
+  partnerRef = null;  
+  partnerListener = null;  
+  typingRef = null;  
+  typingListener = null;  
+  myTypingRef = null;  
+  presenceRef = null;  
+  connectedRef = null;  
+  typingTimer = null;  
+  currentUid = null;  
+  activeReply = null;  
+  editingMessageKey = null;  
+  initialLoadDone = false;  
+  
+  messagesBox.replaceChildren();  
+  typingStatus.textContent = "";  
+  partnerStatus.textContent = "";  
+  hideReplyPreview();  
+}  
+  
+function startPresence() {  
+  presenceRef = db.ref("status/" + currentUid);  
+  connectedRef = db.ref(".info/connected");  
+  
+  connectedRef.on("value", snapshot => {  
+    if (snapshot.val() !== true || !auth.currentUser) return;  
+  
+    presenceRef.onDisconnect().set({  
+      online: false,  
+      lastSeen: firebase.database.ServerValue.TIMESTAMP  
+    }).then(() => {  
+      return presenceRef.set({  
+        online: true,  
+        lastSeen: firebase.database.ServerValue.TIMESTAMP  
+      });  
+    }).catch(error => console.error(error));  
+  });  
+}  
+  
+function startPartnerStatus() {  
+  const partnerUid = getPartnerUid();  
+  partnerRef = db.ref("status/" + partnerUid);  
+  
+  partnerListener = snapshot => {  
+    const data = snapshot.val();  
+    if (data && data.online === true) {  
+      partnerStatus.textContent = "Online";  
+    } else {  
+      partnerStatus.textContent = "Offline";  
+    }  
+  };  
+  
+  partnerRef.on("value", partnerListener);  
+}  
+  
+function startTypingIndicator() {  
+  const partnerUid = getPartnerUid();  
+  myTypingRef = db.ref("typing/" + currentUid);  
+  typingRef = db.ref("typing/" + partnerUid);  
+  
+  typingListener = snapshot => {  
+    typingStatus.textContent = snapshot.val() === true ? "Typing..." : "";  
+  };  
+  
+  typingRef.on("value", typingListener);  
+  messageInput.addEventListener("input", handleTyping);  
+}  
+  
+function handleTyping() {  
+  if (!myTypingRef || !auth.currentUser) return;  
+  myTypingRef.set(messageInput.value.trim().length > 0).catch(error => console.error(error));  
+  if (typingTimer) clearTimeout(typingTimer);  
+  typingTimer = setTimeout(() => {  
+    if (myTypingRef) myTypingRef.set(false).catch(() => {});  
+  }, 1500);  
+}  
+  
+function startMessages() {  
+  stopListener(messagesRef, "value", messagesListener);  
+  messagesBox.replaceChildren();  
+  messagesRef = db.ref("messages").limitToLast(100);  
+  
+  initialLoadDone = false;  
+  
+  messagesListener = snapshot => {  
+    messagesBox.replaceChildren();  
+    let latestMessage = null;  
+  
+    snapshot.forEach(child => {  
+      const message = child.val();  
+      if (!message) return;  
+  
+      const messageKey = child.key;  
+      latestMessage = message;  
+  
+      const bubble = document.createElement("div");  
+      bubble.className = "message" + (message.senderUid === currentUid ? " mine" : "");  
+  
+      const meta = document.createElement("div");  
+      meta.className = "meta";  
+  
+      const timestamp = Number(message.createdAt);  
+      const dateText = Number.isFinite(timestamp) && timestamp > 0  
+        ? new Date(timestamp).toLocaleString()  
+        : "Just now";  
+  
+      const senderLabel = message.senderUid === currentUid ? "Me" : "You";  
+      const metaSpan = document.createElement("span");  
+      metaSpan.textContent = senderLabel + " · " + dateText;  
+      meta.appendChild(metaSpan);  
+  
+      const actionsDiv = document.createElement("div");  
+      actionsDiv.style.display = "inline-flex";  
+      actionsDiv.style.gap = "6px";  
+
+      const replyBtn = document.createElement("button");  
+      replyBtn.className = "reply-btn";  
+      replyBtn.textContent = "Répondre";  
+      replyBtn.type = "button";  
+      replyBtn.onclick = () => {  
+        activeReply = {  
+          sender: senderLabel,  
+          text: message.text || "[Photo]"  
+        };  
+        replyPreviewUser.textContent = "Replying to " + senderLabel;  
+        replyPreviewText.textContent = activeReply.text;  
+        replyPreview.style.display = "block";  
+        messageInput.focus();  
+      };  
+      actionsDiv.appendChild(replyBtn);  
+
+      if (message.senderUid === currentUid) {  
+        if (message.text) {  
+          const editBtn = document.createElement("button");  
+          editBtn.className = "reply-btn";  
+          editBtn.textContent = "Modifier";  
+          editBtn.type = "button";  
+          editBtn.onclick = () => {  
+            editingMessageKey = messageKey;  
+            messageInput.value = message.text;  
+            replyPreviewUser.textContent = "Editing message";  
+            replyPreviewText.textContent = message.text;  
+            replyPreview.style.display = "block";  
+            messageInput.focus();  
+          };  
+          actionsDiv.appendChild(editBtn);  
+        }  
+
+        const deleteBtn = document.createElement("button");  
+        deleteBtn.className = "reply-btn";  
+        deleteBtn.textContent = "Supprimer";  
+        deleteBtn.type = "button";  
+        deleteBtn.style.color = "#d9534f";  
+        deleteBtn.onclick = async () => {  
+          if (confirm("Delete this message?")) {  
+            await db.ref("messages/" + messageKey).remove();  
+          }  
+        };  
+        actionsDiv.appendChild(deleteBtn);  
+      }  
+
+      meta.appendChild(actionsDiv);  
+      bubble.appendChild(meta);  
+  
+      if (message.replyTo) {  
+        const quoted = document.createElement("div");  
+        quoted.className = "quoted-box";  
+        quoted.innerHTML = `<strong>${message.replyTo.sender}</strong><br>${escapeHtml(message.replyTo.text)}`;  
+        bubble.appendChild(quoted);  
+      }  
+  
+      if (message.text) {  
+        const content = document.createElement("div");  
+        content.className = "messageText";  
+        content.textContent = message.text;  
+        bubble.appendChild(content);  
+      }  
+  
+      if (message.imageUrl) {  
+        const img = document.createElement("img");  
+        img.className = "message-img";  
+        img.src = message.imageUrl;  
+        img.onclick = () => window.open(message.imageUrl, "_blank");  
+        bubble.appendChild(img);  
+      }  
+  
+      messagesBox.appendChild(bubble);  
+    });  
+  
+    messagesBox.scrollTop = messagesBox.scrollHeight;  
+    connectionStatus.textContent = "Connected";  
+  
+    if (initialLoadDone && latestMessage && latestMessage.senderUid !== currentUid) {  
+      triggerNotification(latestMessage.text || "Sent a photo");  
+    }  
+    initialLoadDone = true;  
+  };  
+  
+  messagesRef.on("value", messagesListener, error => {  
+    connectionStatus.textContent = "Could not load messages. Check database rules.";  
+    console.error(error);  
+  });  
+}  
+  
+function escapeHtml(text) {  
+  const div = document.createElement("div");  
+  div.textContent = text;  
+  return div.innerHTML;  
+}  
+  
+function hideReplyPreview() {  
+  activeReply = null;  
+  editingMessageKey = null;  
+  replyPreview.style.display = "none";  
+  replyPreviewText.textContent = "";  
+}  
+  
+cancelReply.onclick = hideReplyPreview;  
+  
+function checkNotificationPermissionUI() {  
+  if (!("Notification" in window)) return;  
+  if (Notification.permission === "granted" || Notification.permission === "denied") {  
+    notifBanner.style.display = "none";  
+  } else {  
+    notifBanner.style.display = "block";  
+  }  
+}  
+  
+function requestNotificationPermission() {  
+  if (!("Notification" in window)) return;  
+  Notification.requestPermission().then(permission => {  
+    checkNotificationPermissionUI();  
+    if (permission === "granted") {  
+      new Notification("Notifications Enabled!", { body: "You will now receive alerts for new messages." });  
+    }  
+  });  
+}  
+  
+function triggerNotification(text) {  
+  if (!("Notification" in window) || Notification.permission !== "granted") return;  
+  if (document.hidden) {  
+    new Notification("New message", {  
+      body: text.length > 50 ? text.substring(0, 50) + "..." : text,  
+      icon: "https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"  
+    });  
+  }  
+}  
+  
+document.getElementById("fileButton").onclick = () => {  
+  document.getElementById("fileInput").click();  
+};  
+  
+fileInput.onchange = async () => {  
+  const file = fileInput.files[0];  
+  if (!file) return;  
+  
+  if (file.size > 2 * 1024 * 1024) {  
+    alert("Please select an image smaller than 2MB.");  
+    fileInput.value = "";  
+    return;  
+  }  
+  
+  sendButton.disabled = true;  
+  chatStatus.textContent = "Compressing & sending photo...";  
+  
+  const reader = new FileReader();  
+  reader.onload = async function(e) {  
+    const base64String = e.target.result;  
+    try {  
+      const messageData = {  
+        imageUrl: base64String,  
+        senderUid: auth.currentUser.uid,  
+        createdAt: firebase.database.ServerValue.TIMESTAMP  
+      };  
+      if (activeReply) {  
+        messageData.replyTo = activeReply;  
+      }  
+      await db.ref("messages").push(messageData);  
+      hideReplyPreview();  
+      fileInput.value = "";  
+      chatStatus.textContent = "";  
+    } catch (err) {  
+      chatStatus.textContent = "Failed to send photo.";  
+      console.error(err);  
+    } finally {  
+      document.getElementById("fileButton").onclick = () => {  
+  document.getElementById("fileInput").click();  
+};  
+  
+fileInput.onchange = async () => {  
+  const file = fileInput.files[0];  
+  if (!file) return;  
+  
+  if (file.size > 2 * 1024 * 1024) {  
+    alert("Please select an image smaller than 2MB.");  
+    fileInput.value = "";  
+    return;  
+  }  
+  
+  sendButton.disabled = true;  
+  chatStatus.textContent = "Compressing & sending photo...";  
+  
+  const reader = new FileReader();  
+  reader.onload = async function(e) {  
+    const base64String = e.target.result;  
+    try {  
+      const messageData = {  
+        imageUrl: base64String,  
+        senderUid: auth.currentUser.uid,  
+        createdAt: firebase.database.ServerValue.TIMESTAMP  
+      };  
+      if (activeReply) {  
+        messageData.replyTo = activeReply;  
+      }  
+      await db.ref("messages").push(messageData);  
+      hideReplyPreview();  
+      fileInput.value = "";  
+      chatStatus.textContent = "";  
+    } catch (err) {  
+      chatStatus.textContent = "Failed to send photo.";  
+      console.error(err);  
+    } finally {  
+      sendButton.disabled = false;  
+    }  
+  };  
+  reader.readAsDataURL(file);  
+};  
+  
+function startChatFeatures() {  
+  if (!auth.currentUser) return;  
+  currentUid = auth.currentUser.uid;  
+  connectionStatus.textContent = "Connecting...";  
+  chatStatus.textContent = "";  
+  
+  startMessages();  
+  startPresence();  
+  startPartnerStatus();  
+  startTypingIndicator();  
+}  
+  
+document.getElementById("loginForm").addEventListener("submit", async event => {  
+  event.preventDefault();  
+  const loginButton = document.getElementById("loginButton");  
+  loginButton.disabled = true;  
+  loginStatus.textContent = "Signing in...";  
+  
+  try {  
+    await auth.signInWithEmailAndPassword(  
+      document.getElementById("email").value.trim(),  
+      document.getElementById("password").value  
+    );  
+  } catch (error) {  
+    loginStatus.textContent = "Could not sign in. Check your email and password.";  
+    console.error(error);  
+  } finally {  
+    loginButton.disabled = false;  
+  }  
+});  
+  
+document.getElementById("sendForm").addEventListener("submit", async event => {  
+  event.preventDefault();  
+  const message = messageInput.value.trim();  
+  if (!message || !auth.currentUser) return;  
+  
+  sendButton.disabled = true;  
+  chatStatus.textContent = "";  
+  
+  try {  
+    if (editingMessageKey) {  
+      await db.ref("messages/" + editingMessageKey).update({ text: message });  
+    } else {  
+      const messageData = {  
+        text: message,  
+        senderUid: auth.currentUser.uid,  
+        createdAt: firebase.database.ServerValue.TIMESTAMP  
+      };  
+      if (activeReply) {  
+        messageData.replyTo = activeReply;  
+      }  
+      await db.ref("messages").push(messageData);  
+    }  
+  
+    messageInput.value = "";  
+    hideReplyPreview();  
+    if (myTypingRef) await myTypingRef.set(false);  
+    messageInput.focus();  
+  } catch (error) {  
+    chatStatus.textContent = "Operation failed. Please try again.";  
+    console.error(error);  
+  } finally {  
+    sendButton.disabled = false;  
+  }  
+});  
+  
+document.getElementById("logout").addEventListener("click", async () => {  
+  stopChatFeatures();  
+  await auth.signOut();  
+});  
+  
+auth.onAuthStateChanged(user => {  
+  if (user) {  
+    showChat();  
+  } else {  
+    stopChatFeatures();  
+    showLogin();  
+  }  
+});  
+  
+window.addEventListener("beforeunload", () => {  
+  if (myTypingRef) myTypingRef.remove();  
+});  
+</script>  
+</body>  
+</html>
+     
