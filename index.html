@@ -316,7 +316,7 @@ footer {
 <body>  
 <header>  
   <h1>Where We Belong</h1>  
-  <p>Just us, welcome to our little world 💜.</p>  
+  <p>Just us, one message at a time.</p>  
 </header>  
 
 <main>  
@@ -353,8 +353,8 @@ footer {
 
     <form id="sendForm">  
       <div id="sendRow">  
-        <button type="button" id="fileButton" title="Send Photo">📷</button>  
-        <input type="file" id="fileInput" style="display:none;">
+        <button type="button" id="fileButton" title="Send File">📷</button>  
+        <input type="file" id="fileInput" style="display:none;">  
         <input id="messageInput" placeholder="Write a message..." maxlength="2000" autocomplete="off">  
         <button id="sendButton" type="submit">Send</button>  
       </div>  
@@ -568,7 +568,7 @@ function startMessages() {
       actionsDiv.style.display = "inline-flex";  
       actionsDiv.style.gap = "8px";  
 
-      // Reply Button (Arrow)
+      // Reply Button (Arrow ↩)
       const replyBtn = document.createElement("button");  
       replyBtn.className = "reply-btn";  
       replyBtn.innerHTML = "↩";  
@@ -577,7 +577,7 @@ function startMessages() {
       replyBtn.onclick = () => {  
         activeReply = {  
           sender: senderLabel,  
-          text: message.text || "[Photo]"  
+          text: message.text || message.fileName || "[File/Photo]"  
         };  
         replyPreviewUser.textContent = "Replying to " + senderLabel;  
         replyPreviewText.textContent = activeReply.text;  
@@ -586,9 +586,59 @@ function startMessages() {
       };  
       actionsDiv.appendChild(replyBtn);  
 
+      // Emoji Reaction Button (😀)
+      const reactionPickerBtn = document.createElement("button");  
+      reactionPickerBtn.className = "reply-btn";  
+      reactionPickerBtn.innerHTML = "😀";  
+      reactionPickerBtn.title = "React";  
+      reactionPickerBtn.type = "button";  
+      
+      const emojiList = ["❤️", "😂", "👍", "😍", "🔥", "😢"];
+      reactionPickerBtn.onclick = () => {  
+        let picker = bubble.querySelector(".emoji-picker-menu");  
+        if (picker) {  
+          picker.remove();  
+          return;  
+        }  
+        picker = document.createElement("div");  
+        picker.className = "emoji-picker-menu";  
+        picker.style.position = "absolute";  
+        picker.style.background = "#fff";  
+        picker.style.border = "1px solid #ccc";  
+        picker.style.borderRadius = "20px";  
+        picker.style.padding = "4px 8px";  
+        picker.style.boxShadow = "0 2px 6px rgba(0,0,0,0.15)";  
+        picker.style.zIndex = "10";  
+        picker.style.display = "flex";  
+        picker.style.gap = "6px";  
+        picker.style.bottom = "100%";  
+        picker.style.left = "0";  
+
+        emojiList.forEach(emoji => {  
+          const emojiBtn = document.createElement("button");  
+          emojiBtn.type = "button";  
+          emojiBtn.style.background = "none";  
+          emojiBtn.style.border = "none";  
+          emojiBtn.style.cursor = "pointer";  
+          emojiBtn.style.fontSize = "16px";  
+          emojiBtn.style.padding = "2px";  
+          emojiBtn.style.width = "auto";  
+          emojiBtn.textContent = emoji;  
+          emojiBtn.onclick = async () => {  
+            await db.ref(`messages/${messageKey}/reactions/${currentUid}`).set(emoji);  
+            picker.remove();  
+          };  
+          picker.appendChild(emojiBtn);  
+        });  
+
+        bubble.style.position = "relative";  
+        bubble.appendChild(picker);  
+      };  
+      actionsDiv.appendChild(reactionPickerBtn);  
+
       if (message.senderUid === currentUid) {  
         if (message.text) {  
-          // Edit Button (Pen)
+          // Edit Button (Pen ✏️)
           const editBtn = document.createElement("button");  
           editBtn.className = "reply-btn";  
           editBtn.innerHTML = "✏️";  
@@ -605,7 +655,7 @@ function startMessages() {
           actionsDiv.appendChild(editBtn);  
         }  
 
-        // Delete Button (Bin)
+        // Delete Button (Bin 🗑️)
         const deleteBtn = document.createElement("button");  
         deleteBtn.className = "reply-btn";  
         deleteBtn.innerHTML = "🗑️";  
@@ -654,7 +704,32 @@ function startMessages() {
         fileLink.style.color = "#008f75";  
         fileLink.style.fontWeight = "bold";  
         bubble.appendChild(fileLink);  
-      }
+      }  
+
+      // Render reactions container under message
+      const reactionsDiv = document.createElement("div");  
+      reactionsDiv.style.display = "flex";  
+      reactionsDiv.style.gap = "4px";  
+      reactionsDiv.style.marginTop = "4px";  
+      reactionsDiv.style.flexWrap = "wrap";  
+
+      if (message.reactions) {  
+        const counts = {};  
+        for (const uid in message.reactions) {  
+          const emoji = message.reactions[uid];  
+          counts[emoji] = (counts[emoji] || 0) + 1;  
+        }  
+        for (const emoji in counts) {  
+          const badge = document.createElement("span");  
+          badge.style.background = "rgba(0,0,0,0.08)";  
+          badge.style.padding = "2px 6px";  
+          badge.style.borderRadius = "12px";  
+          badge.style.fontSize = "12px";  
+          badge.textContent = `${emoji} ${counts[emoji]}`;  
+          reactionsDiv.appendChild(badge);  
+        }  
+      }  
+      bubble.appendChild(reactionsDiv);  
   
       messagesBox.appendChild(bubble);  
     });  
@@ -663,7 +738,7 @@ function startMessages() {
     connectionStatus.textContent = "Connected";  
   
     if (initialLoadDone && latestMessage && latestMessage.senderUid !== currentUid) {  
-      triggerNotification(latestMessage.text || "Sent a photo");  
+      triggerNotification(latestMessage.text || latestMessage.fileName || "Sent a file");  
     }  
     initialLoadDone = true;  
   };  
@@ -740,12 +815,17 @@ fileInput.onchange = async () => {
     const base64String = e.target.result;  
     try {  
       const messageData = {  
-        fileUrl: base64String,  
-        fileName: file.name,  
-        fileType: file.type,  
         senderUid: auth.currentUser.uid,  
         createdAt: firebase.database.ServerValue.TIMESTAMP  
       };  
+
+      if (file.type.startsWith("image/")) {  
+        messageData.imageUrl = base64String;  
+      } else {  
+        messageData.fileUrl = base64String;  
+        messageData.fileName = file.name;  
+      }  
+
       if (activeReply) {  
         messageData.replyTo = activeReply;  
       }  
@@ -761,7 +841,8 @@ fileInput.onchange = async () => {
     }  
   };  
   reader.readAsDataURL(file);  
-};
+};  
+  
 function startChatFeatures() {  
   if (!auth.currentUser) return;  
   currentUid = auth.currentUser.uid;  
