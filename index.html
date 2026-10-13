@@ -592,7 +592,23 @@ function startMessages() {
       reactionPickerBtn.innerHTML = "😀";  
       reactionPickerBtn.title = "React";  
       reactionPickerBtn.type = "button";  
+      // Emoji Reaction Button (😀)
+      const reactionPickerBtn = document.createElement("button");  
+      reactionPickerBtn.className = "reply-btn";  
+      reactionPickerBtn.innerHTML = "😀";  
+      reactionPickerBtn.title = "React";  
+      reactionPickerBtn.type = "button";  
       
+      reactionPickerBtn.onclick = async () => {  
+        const emoji = prompt("Choisissez une réaction (❤️, 😂, 👍, 😍, 🔥, 😢) :", "❤️");
+        const validEmojis = ["❤️", "😂", "👍", "😍", "🔥", "😢", "👎", "😭"];
+        if (emoji && validEmojis.includes(emoji.trim())) {  
+          await db.ref(`messages/${messageKey}/reactions/${currentUid}`).set(emoji.trim());  
+        } else if (emoji) {
+          alert("Veuillez choisir un emoji valide parmi : ❤️, 😂, 👍, 😍, 🔥, 😢");
+        }
+      };  
+      actionsDiv.appendChild(reactionPickerBtn);
       const emojiList = ["❤️", "😂", "👍", "😍", "🔥", "😢"];
       reactionPickerBtn.onclick = () => {  
         let picker = bubble.querySelector(".emoji-picker-menu");  
