@@ -130,6 +130,7 @@ button:disabled {
   min-height: 280px;  
   max-height: 520px;  
   overflow-y: auto;  
+  overflow-x: visible;  
   padding: 12px;  
   margin-top: 8px;  
   background: #f7f9fa;  
@@ -141,7 +142,7 @@ button:disabled {
   max-width: 85%;  
   width: fit-content;  
   padding: 10px 12px;  
-  margin: 9px 0;  
+  margin: 15px 0;  
   border-radius: 9px;  
   background: #fff;  
   border: 1px solid #e4e8eb;  
@@ -586,21 +587,59 @@ function startMessages() {
       };  
       actionsDiv.appendChild(replyBtn);  
 
-      // Emoji Reaction Button (😀)
+      // WhatsApp-style Emoji Reaction Popup Button (😀)
       const reactionPickerBtn = document.createElement("button");  
       reactionPickerBtn.className = "reply-btn";  
       reactionPickerBtn.innerHTML = "😀";  
       reactionPickerBtn.title = "React";  
       reactionPickerBtn.type = "button";  
       
-      reactionPickerBtn.onclick = async () => {  
-        const emoji = prompt("Choose an emoji reaction (❤️, 😂, 👍, 😍, 🔥, 😢) :", "❤️");
-        const validEmojis = ["❤️", "😂", "👍", "😍", "🔥", "😢", "👎", "😭"];
-        if (emoji && validEmojis.includes(emoji.trim())) {  
-          await db.ref(`messages/${messageKey}/reactions/${currentUid}`).set(emoji.trim());  
-        } else if (emoji) {
-          alert("Please choose a valid emoji from: ❤️, 😂, 👍, 😍, 🔥, 😢");
-        }
+      const emojiList = ["❤️", "😂", "👍", "😍", "🔥", "😢"];
+      reactionPickerBtn.onclick = (e) => {  
+        e.stopPropagation();
+        // Remove any other active picker
+        document.querySelectorAll(".whatsapp-emoji-popup").forEach(p => p.remove());
+
+        const picker = document.createElement("div");  
+        picker.className = "whatsapp-emoji-popup";  
+        picker.style.position = "absolute";  
+        picker.style.background = "#ffffff";  
+        picker.style.border = "1px solid #d1d7db";  
+        picker.style.borderRadius = "30px";  
+        picker.style.padding = "6px 10px";  
+        picker.style.boxShadow = "0 4px 12px rgba(0,0,0,0.15)";  
+        picker.style.zIndex = "999";  
+        picker.style.display = "flex";  
+        picker.style.gap = "8px";  
+        picker.style.bottom = "110%";  
+        picker.style.left = "0";  
+
+        emojiList.forEach(emoji => {  
+          const emojiBtn = document.createElement("button");  
+          emojiBtn.type = "button";  
+          emojiBtn.style.background = "none";  
+          emojiBtn.style.border = "none";  
+          emojiBtn.style.cursor = "pointer";  
+          emojiBtn.style.fontSize = "20px";  
+          emojiBtn.style.padding = "4px";  
+          emojiBtn.style.width = "auto";  
+          emojiBtn.textContent = emoji;  
+          emojiBtn.onclick = async (ev) => {  
+            ev.stopPropagation();
+            await db.ref(`messages/${messageKey}/reactions/${currentUid}`).set(emoji);  
+            picker.remove();  
+          };  
+          picker.appendChild(emojiBtn);  
+        });  
+
+        bubble.appendChild(picker);  
+
+        // Close picker when clicking anywhere else
+        const closeHandler = () => {
+          picker.remove();
+          document.removeEventListener("click", closeHandler);
+        };
+        setTimeout(() => document.addEventListener("click", closeHandler), 10);
       };  
       actionsDiv.appendChild(reactionPickerBtn);  
 
@@ -689,11 +728,17 @@ function startMessages() {
         }  
         for (const emoji in counts) {  
           const badge = document.createElement("span");  
-          badge.style.background = "rgba(0,0,0,0.08)";  
-          badge.style.padding = "2px 6px";  
+          badge.style.background = "#e9edef";  
+          badge.style.border = "1px solid #d1d7db";  
+          badge.style.padding = "2px 8px";  
           badge.style.borderRadius = "12px";  
           badge.style.fontSize = "12px";  
+          badge.style.cursor = "pointer";  
           badge.textContent = `${emoji} ${counts[emoji]}`;  
+          badge.onclick = async () => {  
+            // Tap your own reaction to remove it or change it
+            await db.ref(`messages/${messageKey}/reactions/${currentUid}`).remove();
+          };
           reactionsDiv.appendChild(badge);  
         }  
       }  
@@ -845,6 +890,7 @@ document.getElementById("loginForm").addEventListener("submit", async event => {
 document.getElementById("sendForm").addEventListener("submit", async event => {  
   event.preventDefault();  
   const message = messageInput.value.trim();  
+  if (!message || !auth.currentUser) justReturn();  
   if (!message || !auth.currentUser) return;  
   
   sendButton.disabled = true;  
