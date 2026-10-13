@@ -592,63 +592,15 @@ function startMessages() {
       reactionPickerBtn.innerHTML = "😀";  
       reactionPickerBtn.title = "React";  
       reactionPickerBtn.type = "button";  
-      // Emoji Reaction Button (😀)
-      const reactionPickerBtn = document.createElement("button");  
-      reactionPickerBtn.className = "reply-btn";  
-      reactionPickerBtn.innerHTML = "😀";  
-      reactionPickerBtn.title = "React";  
-      reactionPickerBtn.type = "button";  
       
       reactionPickerBtn.onclick = async () => {  
-        const emoji = prompt("Choisissez une réaction (❤️, 😂, 👍, 😍, 🔥, 😢) :", "❤️");
+        const emoji = prompt("Choose an emoji reaction (❤️, 😂, 👍, 😍, 🔥, 😢) :", "❤️");
         const validEmojis = ["❤️", "😂", "👍", "😍", "🔥", "😢", "👎", "😭"];
         if (emoji && validEmojis.includes(emoji.trim())) {  
           await db.ref(`messages/${messageKey}/reactions/${currentUid}`).set(emoji.trim());  
         } else if (emoji) {
-          alert("Veuillez choisir un emoji valide parmi : ❤️, 😂, 👍, 😍, 🔥, 😢");
+          alert("Please choose a valid emoji from: ❤️, 😂, 👍, 😍, 🔥, 😢");
         }
-      };  
-      actionsDiv.appendChild(reactionPickerBtn);
-      const emojiList = ["❤️", "😂", "👍", "😍", "🔥", "😢"];
-      reactionPickerBtn.onclick = () => {  
-        let picker = bubble.querySelector(".emoji-picker-menu");  
-        if (picker) {  
-          picker.remove();  
-          return;  
-        }  
-        picker = document.createElement("div");  
-        picker.className = "emoji-picker-menu";  
-        picker.style.position = "absolute";  
-        picker.style.background = "#fff";  
-        picker.style.border = "1px solid #ccc";  
-        picker.style.borderRadius = "20px";  
-        picker.style.padding = "4px 8px";  
-        picker.style.boxShadow = "0 2px 6px rgba(0,0,0,0.15)";  
-        picker.style.zIndex = "10";  
-        picker.style.display = "flex";  
-        picker.style.gap = "6px";  
-        picker.style.bottom = "100%";  
-        picker.style.left = "0";  
-
-        emojiList.forEach(emoji => {  
-          const emojiBtn = document.createElement("button");  
-          emojiBtn.type = "button";  
-          emojiBtn.style.background = "none";  
-          emojiBtn.style.border = "none";  
-          emojiBtn.style.cursor = "pointer";  
-          emojiBtn.style.fontSize = "16px";  
-          emojiBtn.style.padding = "2px";  
-          emojiBtn.style.width = "auto";  
-          emojiBtn.textContent = emoji;  
-          emojiBtn.onclick = async () => {  
-            await db.ref(`messages/${messageKey}/reactions/${currentUid}`).set(emoji);  
-            picker.remove();  
-          };  
-          picker.appendChild(emojiBtn);  
-        });  
-
-        bubble.style.position = "relative";  
-        bubble.appendChild(picker);  
       };  
       actionsDiv.appendChild(reactionPickerBtn);  
 
