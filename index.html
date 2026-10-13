@@ -169,7 +169,7 @@ button:disabled {
   background: none;  
   border: none;  
   color: #008f75;  
-  font-size: 11px;  
+  font-size: 13px;  
   padding: 0;  
   margin: 0;  
   width: auto;  
@@ -566,11 +566,13 @@ function startMessages() {
   
       const actionsDiv = document.createElement("div");  
       actionsDiv.style.display = "inline-flex";  
-      actionsDiv.style.gap = "6px";  
+      actionsDiv.style.gap = "8px";  
 
+      // Reply Button (Arrow)
       const replyBtn = document.createElement("button");  
       replyBtn.className = "reply-btn";  
-      replyBtn.textContent = "Répondre";  
+      replyBtn.innerHTML = "↩";  
+      replyBtn.title = "Reply";
       replyBtn.type = "button";  
       replyBtn.onclick = () => {  
         activeReply = {  
@@ -586,9 +588,11 @@ function startMessages() {
 
       if (message.senderUid === currentUid) {  
         if (message.text) {  
+          // Edit Button (Pen)
           const editBtn = document.createElement("button");  
           editBtn.className = "reply-btn";  
-          editBtn.textContent = "Modifier";  
+          editBtn.innerHTML = "✏️";  
+          editBtn.title = "Edit";
           editBtn.type = "button";  
           editBtn.onclick = () => {  
             editingMessageKey = messageKey;  
@@ -601,11 +605,12 @@ function startMessages() {
           actionsDiv.appendChild(editBtn);  
         }  
 
+        // Delete Button (Bin)
         const deleteBtn = document.createElement("button");  
         deleteBtn.className = "reply-btn";  
-        deleteBtn.textContent = "Supprimer";  
+        deleteBtn.innerHTML = "🗑️";  
+        deleteBtn.title = "Delete";
         deleteBtn.type = "button";  
-        deleteBtn.style.color = "#d9534f";  
         deleteBtn.onclick = async () => {  
           if (confirm("Delete this message?")) {  
             await db.ref("messages/" + messageKey).remove();  
