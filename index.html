@@ -738,43 +738,6 @@ fileInput.onchange = async () => {
       chatStatus.textContent = "Failed to send photo.";  
       console.error(err);  
     } finally {  
-      document.getElementById("fileButton").onclick = () => {  
-  document.getElementById("fileInput").click();  
-};  
-  
-fileInput.onchange = async () => {  
-  const file = fileInput.files[0];  
-  if (!file) return;  
-  
-  if (file.size > 2 * 1024 * 1024) {  
-    alert("Please select an image smaller than 2MB.");  
-    fileInput.value = "";  
-    return;  
-  }  
-  
-  sendButton.disabled = true;  
-  chatStatus.textContent = "Compressing & sending photo...";  
-  
-  const reader = new FileReader();  
-  reader.onload = async function(e) {  
-    const base64String = e.target.result;  
-    try {  
-      const messageData = {  
-        imageUrl: base64String,  
-        senderUid: auth.currentUser.uid,  
-        createdAt: firebase.database.ServerValue.TIMESTAMP  
-      };  
-      if (activeReply) {  
-        messageData.replyTo = activeReply;  
-      }  
-      await db.ref("messages").push(messageData);  
-      hideReplyPreview();  
-      fileInput.value = "";  
-      chatStatus.textContent = "";  
-    } catch (err) {  
-      chatStatus.textContent = "Failed to send photo.";  
-      console.error(err);  
-    } finally {  
       sendButton.disabled = false;  
     }  
   };  
@@ -867,4 +830,3 @@ window.addEventListener("beforeunload", () => {
 </script>  
 </body>  
 </html>
-     
