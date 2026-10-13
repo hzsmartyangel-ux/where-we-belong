@@ -316,7 +316,7 @@ footer {
 <body>  
 <header>  
   <h1>Where We Belong</h1>  
-  <p>Just us, one message at a time.</p>  
+  <p>Just us, welcome to our little world 💜.</p>  
 </header>  
 
 <main>  
@@ -714,12 +714,11 @@ fileInput.onchange = async () => {
   const file = fileInput.files[0];  
   if (!file) return;  
   
-  if (file.size > 2 * 1024 * 1024) {  
-    alert("Please select an image smaller than 2MB.");  
+  if (file.size > 5 * 1024 * 1024) {  
+    alert("Please select an image smaller than 5MB.");  
     fileInput.value = "";  
     return;  
-  }  
-  
+  }
   sendButton.disabled = true;  
   chatStatus.textContent = "Compressing & sending photo...";  
   
