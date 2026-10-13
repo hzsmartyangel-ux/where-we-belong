@@ -1,0 +1,235 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Where We Belong ♡</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Georgia,serif;background:linear-gradient(145deg,#f9e6ef,#eee7fa,#f9f0f5);color:#49374c;min-height:100vh}
+header{text-align:center;padding:25px 12px 15px}
+h1{font-size:30px;font-weight:normal;margin:0 0 8px}
+header p{font-size:14px;color:#856c8b;margin:0}
+main{max-width:600px;margin:12px auto;padding:16px}
+.panel{background:#ffffffd9;border:1px solid #ead9ec;border-radius:20px;padding:20px;box-shadow:0 8px 25px #7b587b12}
+input,button{font:inherit;border-radius:12px;padding:13px;width:100%;margin-top:10px}
+input{border:1px solid #ddc9df;background:white;color:#49374c}
+button{border:0;background:#a77db0;color:white;cursor:pointer}
+button:disabled{opacity:.5}
+.small{font-size:12px;color:#8a748e;text-align:center}
+#chat{display:none}
+#messages{height:52vh;min-height:280px;max-height:520px;overflow-y:auto;padding:8px 2px}
+.message{max-width:85%;padding:11px 13px;margin:9px 0;border-radius:16px;background:#f2e7f5;overflow-wrap:anywhere}
+.mine{margin-left:auto;background:#f7e1eb}
+.meta{font:11px Arial,sans-serif;color:#88768b;margin-bottom:5px}
+.messageText{white-space:pre-wrap;line-height:1.4}
+#sendRow{display:flex;gap:8px;align-items:center}
+#messageInput{flex:1;min-width:0}
+#sendButton{width:90px;flex-shrink:0}
+#status{font-size:13px;text-align:center;min-height:20px;color:#856c8b}
+#logout{background:#e9ddec;color:#634b68}
+footer{text-align:center;padding:10px;font-size:12px;color:#947e98}
+</style>
+</head>
+<body>
+<header>
+<h1>Where We Belong ♡</h1>
+<p>A little place for just us.</p>
+</header>
+<main>
+<section class="panel" id="login">
+<h2 style="font-weight:normal;text-align:center">Welcome back ♡</h2>
+<p class="small">Sign in to enter our little space.</p>
+<form id="loginForm">
+<input id="email" type="email" placeholder="Email address" autocomplete="username" required>
+<input id="password" type="password" placeholder="Password" autocomplete="current-password" required>
+<button type="submit">Enter our space ♡</button>
+</form>
+<p id="loginStatus" class="small" role="status"></p>
+</section>
+
+<section class="panel" id="chat">
+<div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
+<div>
+<h2 style="font-weight:normal;margin:0">Our conversation ♡</h2>
+<p class="small" style="text-align:left">Just us, one message at a time.</p>
+</div>
+<button id="logout" style="width:auto;margin:0;padding:10px">Log out</button>
+</div>
+<div id="status" role="status"></div>
+<div id="messages" aria-live="polite"></div>
+<form id="sendForm">
+<div id="sendRow">
+<input id="messageInput" placeholder="Write a message..." maxlength="2000" autocomplete="off" required>
+<button id="sendButton" type="submit">Send ♡</button>
+</div>
+</form>
+<p id="chatStatus" class="small" role="status"></p>
+</section>
+</main>
+<footer>Where We Belong ♡</footer>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyBpa8Mr_4qdt7ETUtiI0wZDS0OW-EZ1884",
+  authDomain: "where-we-belong-b25b1.firebaseapp.com",
+  databaseURL: "https://where-we-belong-b25b1-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "where-we-belong-b25b1",
+  storageBucket: "where-we-belong-b25b1.firebasestorage.app",
+  messagingSenderId: "803513103263",
+  appId: "1:803513103263:web:4252a04ddbbd6d1ac1c3aa",
+  measurementId: "G-5QSSTNZQ7H"
+};
+
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.database();
+
+const allowedUsers = [
+  "THUCBdlzXdf24tJglhi8jYSVFaR2",
+  "ZFepStVL7uMwTi6zrOP8tx3Oyuh1"
+];
+
+const loginPanel = document.getElementById("login");
+const chatPanel = document.getElementById("chat");
+const loginStatus = document.getElementById("loginStatus");
+const chatStatus = document.getElementById("chatStatus");
+const messagesBox = document.getElementById("messages");
+const sendButton = document.getElementById("sendButton");
+let messagesRef = null;
+let messagesListener = null;
+
+function showLogin(message = "") {
+  loginPanel.style.display = "block";
+  chatPanel.style.display = "none";
+  loginStatus.textContent = message;
+}
+
+function showChat() {
+  loginPanel.style.display = "none";
+  chatPanel.style.display = "block";
+  startMessages();
+}
+
+function stopMessages() {
+  if (messagesRef && messagesListener) {
+    messagesRef.off("value", messagesListener);
+  }
+  messagesRef = null;
+  messagesListener = null;
+}
+
+function startMessages() {
+  stopMessages();
+  messagesBox.replaceChildren();
+  chatStatus.textContent = "";
+  document.getElementById("status").textContent = "Connecting...";
+
+  messagesRef = db.ref("messages").limitToLast(100);
+  messagesListener = snapshot => {
+    messagesBox.replaceChildren();
+    snapshot.forEach(child => {
+      const m = child.val();
+      if (!m || typeof m.text !== "string") return;
+
+      const bubble = document.createElement("div");
+      bubble.className = "message" +
+        (m.senderUid === auth.currentUser.uid ? " mine" : "");
+
+      const meta = document.createElement("div");
+      meta.className = "meta";
+      const time = Number(m.createdAt);
+      meta.textContent =
+        (m.senderUid === auth.currentUser.uid ? "You" : "♡") +
+        " · " +
+        (Number.isFinite(time) && time > 0
+          ? new Date(time).toLocaleString()
+          : "Just now");
+
+      const content = document.createElement("div");
+      content.className = "messageText";
+      content.textContent = m.text;
+
+      bubble.append(meta, content);
+      messagesBox.appendChild(bubble);
+    });
+    messagesBox.scrollTop = messagesBox.scrollHeight;
+    document.getElementById("status").textContent = "Connected ♡";
+  };
+
+  messagesRef.on("value", messagesListener, error => {
+    document.getElementById("status").textContent =
+      "Could not load messages. Check database rules.";
+    console.error(error);
+  });
+}
+
+document.getElementById("loginForm").addEventListener("submit", async event => {
+  event.preventDefault();
+  loginStatus.textContent = "Signing in...";
+  try {
+    const result = await auth.signInWithEmailAndPassword(
+      document.getElementById("email").value.trim(),
+      document.getElementById("password").value
+    );
+    if (!allowedUsers.includes(result.user.uid)) {
+      await auth.signOut();
+      showLogin("This account is not allowed.");
+      return;
+    }
+    showChat();
+  } catch (error) {
+    loginStatus.textContent =
+      error.code === "auth/invalid-credential"
+        ? "Email or password is incorrect."
+        : "Could not sign in. Please check your details and try again.";
+    console.error(error);
+  }
+});
+
+document.getElementById("sendForm").addEventListener("submit", async event => {
+  event.preventDefault();
+  const input = document.getElementById("messageInput");
+  const message = input.value.trim();
+  if (!message || !auth.currentUser ||
+      !allowedUsers.includes(auth.currentUser.uid)) return;
+
+  sendButton.disabled = true;
+  chatStatus.textContent = "";
+  try {
+    await db.ref("messages").push({
+      text: message,
+      senderUid: auth.currentUser.uid,
+      createdAt: firebase.database.ServerValue.TIMESTAMP
+    });
+    input.value = "";
+    input.focus();
+  } catch (error) {
+    chatStatus.textContent = "Message not sent. Please try again.";
+    console.error(error);
+  } finally {
+    sendButton.disabled = false;
+  }
+});
+
+document.getElementById("logout").addEventListener("click", async () => {
+  stopMessages();
+  await auth.signOut();
+});
+
+auth.onAuthStateChanged(user => {
+  if (user && allowedUsers.includes(user.uid)) {
+    showChat();
+  } else {
+    stopMessages();
+    if (user) auth.signOut();
+    showLogin();
+  }
+});
+</script>
+</body>
+</html>
