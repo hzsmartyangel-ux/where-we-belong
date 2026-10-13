@@ -680,6 +680,355 @@ fileInput.onchange = async () => {
     return;  
   }  
   
+<script>  
+const firebaseConfig = {  
+  apiKey: "AIzaSyBpa8Mr_4qdt7ETUtiI0wZDS0OW-EZ1884",  
+  authDomain: "where-we-belong-b25b1.firebaseapp.com",  
+  databaseURL: "https://where-we-belong-b25b1-default-rtdb.europe-west1.firebasedatabase.app",  
+  projectId: "where-we-belong-b25b1",  
+  storageBucket: "where-we-belong-b25b1.firebasestorage.app",  
+  messagingSenderId: "803513103263",  
+  appId: "1:803513103263:web:4252a04ddbbd6d1ac1c3aa",  
+  measurementId: "G-5QSSTNZQ7H"  
+};  
+  
+firebase.initializeApp(firebaseConfig);  
+  
+const auth = firebase.auth();  
+const db = firebase.database();  
+  
+const loginPanel = document.getElementById("login");  
+const chatPanel = document.getElementById("chat");  
+const loginStatus = document.getElementById("loginStatus");  
+const chatStatus = document.getElementById("chatStatus");  
+const messagesBox = document.getElementById("messages");  
+const messageInput = document.getElementById("messageInput");  
+const sendButton = document.getElementById("sendButton");  
+const connectionStatus = document.getElementById("status");  
+const partnerStatus = document.getElementById("partnerStatus");  
+const typingStatus = document.getElementById("typingStatus");  
+const fileButton = document.getElementById("fileButton");  
+const fileInput = document.getElementById("fileInput");  
+const notifBanner = document.getElementById("notifBanner");  
+const replyPreview = document.getElementById("replyPreview");  
+const replyPreviewUser = document.getElementById("replyPreviewUser");  
+const replyPreviewText = document.getElementById("replyPreviewText");  
+const cancelReply = document.getElementById("cancelReply");  
+  
+let messagesRef = null;  
+let messagesListener = null;  
+let partnerRef = null;  
+let partnerListener = null;  
+let typingRef = null;  
+let typingListener = null;  
+let myTypingRef = null;  
+let presenceRef = null;  
+let connectedRef = null;  
+let typingTimer = null;  
+let currentUid = null;  
+let activeReply = null;  
+let editingMessageKey = null; // Track if we are editing a message
+let initialLoadDone = false;  
+
+function getPartnerUid() {  
+  return currentUid === "THUCBdlzXdf24tJglhi8jYSVFaR2" ? "ZFepStVL7uMwTi6zrOP8tx3Oyuh1" : "THUCBdlzXdf24tJglhi8jYSVFaR2";  
+}  
+  
+function showLogin(message = "") {  
+  loginPanel.style.display = "block";  
+  chatPanel.style.display = "none";  
+  loginStatus.textContent = message;  
+}  
+  
+function showChat() {  
+  loginPanel.style.display = "none";  
+  chatPanel.style.display = "block";  
+  startChatFeatures();  
+  checkNotificationPermissionUI();  
+}  
+  
+function stopListener(ref, event, callback) {  
+  if (ref && callback) ref.off(event, callback);  
+}  
+  
+function stopChatFeatures() {  
+  stopListener(messagesRef, "value", messagesListener);  
+  stopListener(partnerRef, "value", partnerListener);  
+  stopListener(typingRef, "value", typingListener);  
+  stopListener(connectedRef, "value", null);  
+  
+  if (typingTimer) clearTimeout(typingTimer);  
+  
+  if (myTypingRef) myTypingRef.remove().catch(() => {});  
+  if (presenceRef) presenceRef.onDisconnect().cancel().catch(() => {});  
+  if (presenceRef) presenceRef.remove().catch(() => {});  
+  
+  messagesRef = null;  
+  messagesListener = null;  
+  partnerRef = null;  
+  partnerListener = null;  
+  typingRef = null;  
+  typingListener = null;  
+  myTypingRef = null;  
+  presenceRef = null;  
+  connectedRef = null;  
+  typingTimer = null;  
+  currentUid = null;  
+  activeReply = null;  
+  editingMessageKey = null;
+  initialLoadDone = false;  
+  
+  messagesBox.replaceChildren();  
+  typingStatus.textContent = "";  
+  partnerStatus.textContent = "";  
+  hideReplyPreview();  
+}  
+  
+function startPresence() {  
+  presenceRef = db.ref("status/" + currentUid);  
+  connectedRef = db.ref(".info/connected");  
+  
+  connectedRef.on("value", snapshot => {  
+    if (snapshot.val() !== true || !auth.currentUser) return;  
+  
+    presenceRef.onDisconnect().set({  
+      online: false,  
+      lastSeen: firebase.database.ServerValue.TIMESTAMP  
+    }).then(() => {  
+      return presenceRef.set({  
+        online: true,  
+        lastSeen: firebase.database.ServerValue.TIMESTAMP  
+      });  
+    }).catch(error => console.error(error));  
+  });  
+}  
+  
+function startPartnerStatus() {  
+  const partnerUid = getPartnerUid();  
+  partnerRef = db.ref("status/" + partnerUid);  
+  
+  partnerListener = snapshot => {  
+    const data = snapshot.val();  
+    if (data && data.online === true) {  
+      partnerStatus.textContent = "Online";  
+    } else {  
+      partnerStatus.textContent = "Offline";  
+    }  
+  };  
+  
+  partnerRef.on("value", partnerListener);  
+}  
+  
+function startTypingIndicator() {  
+  const partnerUid = getPartnerUid();  
+  myTypingRef = db.ref("typing/" + currentUid);  
+  typingRef = db.ref("typing/" + partnerUid);  
+  
+  typingListener = snapshot => {  
+    typingStatus.textContent = snapshot.val() === true ? "Typing..." : "";  
+  };  
+  
+  typingRef.on("value", typingListener);  
+  messageInput.addEventListener("input", handleTyping);  
+}  
+  
+function handleTyping() {  
+  if (!myTypingRef || !auth.currentUser) return;  
+  myTypingRef.set(messageInput.value.trim().length > 0).catch(error => console.error(error));  
+  if (typingTimer) clearTimeout(typingTimer);  
+  typingTimer = setTimeout(() => {  
+    if (myTypingRef) myTypingRef.set(false).catch(() => {});  
+  }, 1500);  
+}  
+  
+function startMessages() {  
+  stopListener(messagesRef, "value", messagesListener);  
+  messagesBox.replaceChildren();  
+  messagesRef = db.ref("messages").limitToLast(100);  
+  
+  initialLoadDone = false;  
+  
+  messagesListener = snapshot => {  
+    messagesBox.replaceChildren();  
+    let latestMessage = null;  
+  
+    snapshot.forEach(child => {  
+      const message = child.val();  
+      if (!message) return;  
+  
+      const messageKey = child.key;  
+      latestMessage = message;  
+  
+      const bubble = document.createElement("div");  
+      bubble.className = "message" + (message.senderUid === currentUid ? " mine" : "");  
+  
+      const meta = document.createElement("div");  
+      meta.className = "meta";  
+  
+      const timestamp = Number(message.createdAt);  
+      const dateText = Number.isFinite(timestamp) && timestamp > 0  
+        ? new Date(timestamp).toLocaleString()  
+        : "Just now";  
+  
+      const senderLabel = message.senderUid === currentUid ? "Me" : "You";  
+      const metaSpan = document.createElement("span");  
+      metaSpan.textContent = senderLabel + " · " + dateText;  
+      meta.appendChild(metaSpan);  
+  
+      const actionsDiv = document.createElement("div");
+      actionsDiv.style.display = "inline-flex";
+      actionsDiv.style.gap = "6px";
+
+      // Reply Button
+      const replyBtn = document.createElement("button");  
+      replyBtn.className = "reply-btn";  
+      replyBtn.textContent = "Répondre";  
+      replyBtn.type = "button";  
+      replyBtn.onclick = () => {  
+        activeReply = {  
+          sender: senderLabel,  
+          text: message.text || "[Photo]"  
+        };  
+        replyPreviewUser.textContent = "Replying to " + senderLabel;  
+        replyPreviewText.textContent = activeReply.text;  
+        replyPreview.style.display = "block";  
+        messageInput.focus();  
+      };  
+      actionsDiv.appendChild(replyBtn);  
+
+      // Edit & Delete buttons (Only for your own messages)
+      if (message.senderUid === currentUid) {
+        if (message.text) {
+          const editBtn = document.createElement("button");
+          editBtn.className = "reply-btn";
+          editBtn.textContent = "Modifier";
+          editBtn.type = "button";
+          editBtn.onclick = () => {
+            editingMessageKey = messageKey;
+            messageInput.value = message.text;
+            replyPreviewUser.textContent = "Editing message";
+            replyPreviewText.textContent = message.text;
+            replyPreview.style.display = "block";
+            messageInput.focus();
+          };
+          actionsDiv.appendChild(editBtn);
+        }
+
+        const deleteBtn = document.createElement("button");
+        deleteBtn.className = "reply-btn";
+        deleteBtn.textContent = "Supprimer";
+        deleteBtn.type = "button";
+        deleteBtn.style.color = "#d9534f";
+        deleteBtn.onclick = async () => {
+          if (confirm("Delete this message?")) {
+            await db.ref("messages/" + messageKey).remove();
+          }
+        };
+        actionsDiv.appendChild(deleteBtn);
+      }
+
+      meta.appendChild(actionsDiv);  
+      bubble.appendChild(meta);  
+  
+      if (message.replyTo) {  
+        const quoted = document.createElement("div");  
+        quoted.className = "quoted-box";  
+        quoted.innerHTML = `<strong>${message.replyTo.sender}</strong><br>${escapeHtml(message.replyTo.text)}`;  
+        bubble.appendChild(quoted);  
+      }  
+  
+      if (message.text) {  
+        const content = document.createElement("div");  
+        content.className = "messageText";  
+        content.textContent = message.text;  
+        bubble.appendChild(content);  
+      }  
+  
+      if (message.imageUrl) {  
+        const img = document.createElement("img");  
+        img.className = "message-img";  
+        img.src = message.imageUrl;  
+        img.onclick = () => window.open(message.imageUrl, "_blank");  
+        bubble.appendChild(img);  
+      }  
+  
+      messagesBox.appendChild(bubble);  
+    });  
+  
+    messagesBox.scrollTop = messagesBox.scrollHeight;  
+    connectionStatus.textContent = "Connected";  
+  
+    if (initialLoadDone && latestMessage && latestMessage.senderUid !== currentUid) {  
+      triggerNotification(latestMessage.text || "Sent a photo");  
+    }  
+    initialLoadDone = true;  
+  };  
+  
+  messagesRef.on("value", messagesListener, error => {  
+    connectionStatus.textContent = "Could not load messages. Check database rules.";  
+    console.error(error);  
+  });  
+}  
+  
+function escapeHtml(text) {  
+  const div = document.createElement("div");  
+  div.textContent = text;  
+  return div.innerHTML;  
+}  
+  
+function hideReplyPreview() {  
+  activeReply = null;  
+  editingMessageKey = null;
+  replyPreview.style.display = "none";  
+  replyPreviewText.textContent = "";  
+}  
+  
+cancelReply.onclick = hideReplyPreview;  
+  
+function checkNotificationPermissionUI() {  
+  if (!("Notification" in window)) return;  
+  if (Notification.permission === "granted" || Notification.permission === "denied") {  
+    notifBanner.style.display = "none";  
+  } else {  
+    notifBanner.style.display = "block";  
+  }  
+}  
+  
+function requestNotificationPermission() {  
+  if (!("Notification" in window)) return;  
+  Notification.requestPermission().then(permission => {  
+    checkNotificationPermissionUI();  
+    if (permission === "granted") {  
+      new Notification("Notifications Enabled!", { body: "You will now receive alerts for new messages." });  
+    }  
+  });  
+}  
+  
+function triggerNotification(text) {  
+  if (!("Notification" in window) || Notification.permission !== "granted") return;  
+  if (document.hidden) {  
+    new Notification("New message", {  
+      body: text.length > 50 ? text.substring(0, 50) + "..." : text,  
+      icon: "https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"  
+    });  
+  }  
+}  
+  
+// Fixed File Upload Trigger
+document.getElementById("fileButton").onclick = () => {
+  document.getElementById("fileInput").click();
+};
+  
+fileInput.onchange = async () => {  
+  const file = fileInput.files[0];  
+  if (!file) return;  
+  
+  if (file.size > 2 * 1024 * 1024) {  
+    alert("Please select an image smaller than 2MB.");  
+    fileInput.value = "";  
+    return;  
+  }  
+  
   sendButton.disabled = true;  
   chatStatus.textContent = "Compressing & sending photo...";  
   
@@ -694,7 +1043,7 @@ fileInput.onchange = async () => {
       };  
       if (activeReply) {  
         messageData.replyTo = activeReply;  
-      }
+      }  
       await db.ref("messages").push(messageData);  
       hideReplyPreview();  
       fileInput.value = "";  
@@ -749,24 +1098,28 @@ document.getElementById("sendForm").addEventListener("submit", async event => {
   chatStatus.textContent = "";  
   
   try {  
-    const messageData = {  
-      text: message,  
-      senderUid: auth.currentUser.uid,  
-      createdAt: firebase.database.ServerValue.TIMESTAMP  
-    };  
-  
-    if (activeReply) {  
-      messageData.replyTo = activeReply;  
+    if (editingMessageKey) {
+      // Update existing message text
+      await db.ref("messages/" + editingMessageKey).update({ text: message });
+    } else {
+      // Send new message
+      const messageData = {  
+        text: message,  
+        senderUid: auth.currentUser.uid,  
+        createdAt: firebase.database.ServerValue.TIMESTAMP  
+      };  
+      if (activeReply) {  
+        messageData.replyTo = activeReply;  
+      }  
+      await db.ref("messages").push(messageData);  
     }  
-  
-    await db.ref("messages").push(messageData);  
   
     messageInput.value = "";  
     hideReplyPreview();  
     if (myTypingRef) await myTypingRef.set(false);  
     messageInput.focus();  
   } catch (error) {  
-    chatStatus.textContent = "Message not sent. Please try again.";  
+    chatStatus.textContent = "Operation failed. Please try again.";  
     console.error(error);  
   } finally {  
     sendButton.disabled = false;  
@@ -790,6 +1143,6 @@ auth.onAuthStateChanged(user => {
 window.addEventListener("beforeunload", () => {  
   if (myTypingRef) myTypingRef.remove();  
 });  
-</script>  
+</script>
 </body>  
 </html>
