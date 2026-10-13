@@ -354,7 +354,7 @@ footer {
     <form id="sendForm">  
       <div id="sendRow">  
         <button type="button" id="fileButton" title="Send Photo">📷</button>  
-        <input type="file" id="fileInput" accept="image/*" style="display:none;">  
+        <input type="file" id="fileInput" style="display:none;">
         <input id="messageInput" placeholder="Write a message..." maxlength="2000" autocomplete="off">  
         <button id="sendButton" type="submit">Send</button>  
       </div>  
@@ -643,6 +643,18 @@ function startMessages() {
         img.onclick = () => window.open(message.imageUrl, "_blank");  
         bubble.appendChild(img);  
       }  
+
+      if (message.fileUrl) {  
+        const fileLink = document.createElement("a");  
+        fileLink.href = message.fileUrl;  
+        fileLink.download = message.fileName || "download";  
+        fileLink.textContent = "📎 " + (message.fileName || "Download File");  
+        fileLink.style.display = "block";  
+        fileLink.style.marginTop = "6px";  
+        fileLink.style.color = "#008f75";  
+        fileLink.style.fontWeight = "bold";  
+        bubble.appendChild(fileLink);  
+      }
   
       messagesBox.appendChild(bubble);  
     });  
@@ -715,19 +727,22 @@ fileInput.onchange = async () => {
   if (!file) return;  
   
   if (file.size > 5 * 1024 * 1024) {  
-    alert("Please select an image smaller than 5MB.");  
+    alert("Please select a file smaller than 5MB.");  
     fileInput.value = "";  
     return;  
-  }
+  }  
+  
   sendButton.disabled = true;  
-  chatStatus.textContent = "Compressing & sending photo...";  
+  chatStatus.textContent = "Uploading file...";  
   
   const reader = new FileReader();  
   reader.onload = async function(e) {  
     const base64String = e.target.result;  
     try {  
       const messageData = {  
-        imageUrl: base64String,  
+        fileUrl: base64String,  
+        fileName: file.name,  
+        fileType: file.type,  
         senderUid: auth.currentUser.uid,  
         createdAt: firebase.database.ServerValue.TIMESTAMP  
       };  
@@ -739,15 +754,14 @@ fileInput.onchange = async () => {
       fileInput.value = "";  
       chatStatus.textContent = "";  
     } catch (err) {  
-      chatStatus.textContent = "Failed to send photo.";  
+      chatStatus.textContent = "Failed to send file.";  
       console.error(err);  
     } finally {  
       sendButton.disabled = false;  
     }  
   };  
   reader.readAsDataURL(file);  
-};  
-  
+};
 function startChatFeatures() {  
   if (!auth.currentUser) return;  
   currentUid = auth.currentUser.uid;  
