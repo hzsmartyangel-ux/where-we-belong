@@ -588,10 +588,10 @@ function startMessages() {
       };  
       actionsDiv.appendChild(replyBtn);  
 
-      // Emoji Reaction Button (😀) - Super reliable on mobile and desktop
+      // Reaction Button (😍 - Face with Heart Eyes) with Expanded Emoji List
       const reactionBtn = document.createElement("button");  
       reactionBtn.className = "reply-btn";  
-      reactionBtn.innerHTML = "😀";  
+      reactionBtn.innerHTML = "😍";  
       reactionBtn.title = "React";  
       reactionBtn.type = "button";  
       reactionBtn.onclick = (e) => {  
@@ -608,11 +608,13 @@ function startMessages() {
         picker.style.boxShadow = "0 4px 12px rgba(0,0,0,0.15)";  
         picker.style.zIndex = "999";  
         picker.style.display = "flex";  
-        picker.style.gap = "8px";  
+        picker.style.flexWrap = "wrap";  
+        picker.style.maxWidth = "220px";  
+        picker.style.gap = "6px";  
         picker.style.bottom = "110%";  
         picker.style.left = "0";  
 
-        const emojiList = ["❤️", "😂", "👍", "😍", "🔥", "😢"];
+        const emojiList = ["❤️", "😍", "🔥", "😂", "👍", "😘", "🥰", "🎉", "😢", "🙏", "👏", "✨"];
         emojiList.forEach(emoji => {  
           const emojiChoice = document.createElement("button");  
           emojiChoice.type = "button";  
