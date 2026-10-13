@@ -588,6 +588,59 @@ function startMessages() {
       };  
       actionsDiv.appendChild(replyBtn);  
 
+      // Emoji Reaction Button (😀) - Super reliable on mobile and desktop
+      const reactionBtn = document.createElement("button");  
+      reactionBtn.className = "reply-btn";  
+      reactionBtn.innerHTML = "😀";  
+      reactionBtn.title = "React";  
+      reactionBtn.type = "button";  
+      reactionBtn.onclick = (e) => {  
+        e.stopPropagation();
+        document.querySelectorAll(".whatsapp-emoji-popup").forEach(p => p.remove());
+
+        const picker = document.createElement("div");  
+        picker.className = "whatsapp-emoji-popup";  
+        picker.style.position = "absolute";  
+        picker.style.background = "#ffffff";  
+        picker.style.border = "1px solid #d1d7db";  
+        picker.style.borderRadius = "30px";  
+        picker.style.padding = "6px 10px";  
+        picker.style.boxShadow = "0 4px 12px rgba(0,0,0,0.15)";  
+        picker.style.zIndex = "999";  
+        picker.style.display = "flex";  
+        picker.style.gap = "8px";  
+        picker.style.bottom = "110%";  
+        picker.style.left = "0";  
+
+        const emojiList = ["❤️", "😂", "👍", "😍", "🔥", "😢"];
+        emojiList.forEach(emoji => {  
+          const emojiChoice = document.createElement("button");  
+          emojiChoice.type = "button";  
+          emojiChoice.style.background = "none";  
+          emojiChoice.style.border = "none";  
+          emojiChoice.style.cursor = "pointer";  
+          emojiChoice.style.fontSize = "22px";  
+          emojiChoice.style.padding = "4px";  
+          emojiChoice.style.width = "auto";  
+          emojiChoice.textContent = emoji;  
+          emojiChoice.onclick = async (ev) => {  
+            ev.stopPropagation();
+            await db.ref(`messages/${messageKey}/reactions/${currentUid}`).set(emoji);  
+            picker.remove();  
+          };  
+          picker.appendChild(emojiChoice);  
+        });  
+
+        bubble.appendChild(picker);  
+
+        const closeHandler = () => {
+          picker.remove();
+          document.removeEventListener("click", closeHandler);
+        };
+        setTimeout(() => document.addEventListener("click", closeHandler), 10);
+      };  
+      actionsDiv.appendChild(reactionBtn);  
+
       if (message.senderUid === currentUid) {  
         if (message.text) {  
           // Edit Button (Pen ✏️)
@@ -663,7 +716,7 @@ function startMessages() {
         bubble.appendChild(fileLink);  
       }  
 
-      // Render reactions container under message
+      // Render reactions container under message/photo
       const reactionsDiv = document.createElement("div");  
       reactionsDiv.style.display = "flex";  
       reactionsDiv.style.gap = "4px";  
@@ -692,56 +745,6 @@ function startMessages() {
         }  
       }  
       bubble.appendChild(reactionsDiv);  
-
-      // --- WhatsApp-style Long Press (Context Menu) for Reactions ---
-      const showEmojiPicker = (e) => {
-        e.preventDefault();
-        document.querySelectorAll(".whatsapp-emoji-popup").forEach(p => p.remove());
-
-        const picker = document.createElement("div");  
-        picker.className = "whatsapp-emoji-popup";  
-        picker.style.position = "absolute";  
-        picker.style.background = "#ffffff";  
-        picker.style.border = "1px solid #d1d7db";  
-        picker.style.borderRadius = "30px";  
-        picker.style.padding = "6px 10px";  
-        picker.style.boxShadow = "0 4px 12px rgba(0,0,0,0.15)";  
-        picker.style.zIndex = "999";  
-        picker.style.display = "flex";  
-        picker.style.gap = "8px";  
-        picker.style.bottom = "110%";  
-        picker.style.left = "0";  
-
-        const emojiList = ["❤️", "😂", "👍", "😍", "🔥", "😢"];
-        emojiList.forEach(emoji => {  
-          const emojiBtn = document.createElement("button");  
-          emojiBtn.type = "button";  
-          emojiBtn.style.background = "none";  
-          emojiBtn.style.border = "none";  
-          emojiBtn.style.cursor = "pointer";  
-          emojiBtn.style.fontSize = "22px";  
-          emojiBtn.style.padding = "4px";  
-          emojiBtn.style.width = "auto";  
-          emojiBtn.textContent = emoji;  
-          emojiBtn.onclick = async (ev) => {  
-            ev.stopPropagation();
-            await db.ref(`messages/${messageKey}/reactions/${currentUid}`).set(emoji);  
-            picker.remove();  
-          };  
-          picker.appendChild(emojiBtn);  
-        });  
-
-        bubble.appendChild(picker);  
-
-        const closeHandler = () => {
-          picker.remove();
-          document.removeEventListener("click", closeHandler);
-        };
-        setTimeout(() => document.addEventListener("click", closeHandler), 10);
-      };
-
-      bubble.addEventListener("contextmenu", showEmojiPicker);
-      // -------------------------------------------------------------
   
       messagesBox.appendChild(bubble);  
     });  
