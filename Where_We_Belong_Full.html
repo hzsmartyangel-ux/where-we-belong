@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#075e54">
+<title>Where We Belong</title>
+<style>
+:root{--green:#075e54;--lightgreen:#d9fdd3;--bg:#efeae2;--panel:#f0f2f5;--text:#111b21;--muted:#667781}
+*{box-sizing:border-box}body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#e9edef;color:var(--text)}button,input,textarea{font:inherit}button{cursor:pointer}button:disabled{opacity:.55;cursor:wait}.hidden{display:none!important}
+#login{min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:20px}.login-card{background:#fff;width:100%;max-width:390px;padding:28px;border-radius:16px;text-align:center;box-shadow:0 4px 22px #0001}.login-card h1{color:var(--green);font-size:27px}.login-card p{color:var(--muted)}.field{width:100%;padding:13px;border:1px solid #d1d7db;border-radius:8px;margin:7px 0;outline-color:#128c7e}.primary{background:var(--green);color:#fff;border:0;border-radius:8px;padding:13px;width:100%;margin-top:10px}#error{color:#b42318;font-size:13px;overflow-wrap:anywhere}
+#app{height:100dvh;max-width:900px;margin:auto;background:var(--bg);display:flex;flex-direction:column;overflow:hidden}header{min-height:68px;background:var(--green);color:#fff;display:flex;align-items:center;padding:9px 13px;gap:11px;flex-shrink:0}.avatar{height:43px;width:43px;flex-shrink:0;border-radius:50%;background:var(--lightgreen);color:var(--green);display:grid;place-items:center;font-size:23px}.headtext{flex:1;min-width:0}.headtext strong{display:block;font-size:17px}.headtext #status{font-size:12px;margin-top:4px;color:#d6f5eb}.iconbtn{border:0;background:transparent;color:inherit;border-radius:50%;padding:9px;font-size:20px}.logout{border:1px solid #ffffff66;border-radius:7px;background:transparent;color:white;padding:7px;font-size:12px}
+#notice{padding:7px 12px;text-align:center;font-size:12px;color:var(--muted);background:#fff}#messages{flex:1;overflow-y:auto;padding:14px 10px;display:flex;flex-direction:column;gap:8px;background-color:var(--bg);background-image:radial-gradient(#d9d0c4 .6px,transparent .6px);background-size:12px 12px}
+.bubble{position:relative;max-width:86%;min-width:100px;padding:9px 10px 6px;border-radius:9px;box-shadow:0 1px 1px #0001;overflow-wrap:anywhere;white-space:pre-wrap}.mine{align-self:flex-end;background:var(--lightgreen);border-top-right-radius:2px}.theirs{align-self:flex-start;background:#fff;border-top-left-radius:2px}.sender{font-size:11px;color:#087e70;margin-bottom:4px;font-weight:bold}.msgtext{white-space:pre-wrap;word-break:break-word}.time{text-align:right;font-size:10px;color:var(--muted);margin-top:5px}.bubble img{display:block;max-width:100%;max-height:280px;object-fit:contain;border-radius:6px;margin:4px 0}.filelink{display:inline-block;color:#075e54;font-weight:bold;text-decoration:none;padding:7px 0}.voiceaudio{width:min(260px,70vw);height:38px}.reactions{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px}.reaction{border:1px solid #c7d7d1;background:#fff;border-radius:14px;padding:3px 7px;font-size:13px}.msgtools{display:flex;justify-content:flex-end;gap:3px;margin-top:4px}.mini{border:0;border-radius:5px;background:#ffffff99;color:#46545b;font-size:12px;padding:4px 6px}.replyquote{border-left:3px solid #128c7e;background:#00000008;padding:5px 7px;margin:0 0 6px;border-radius:3px;font-size:12px;color:#4d5c63}.replyquote strong{display:block;color:#087e70;margin-bottom:2px}
+#typing{min-height:19px;font-size:12px;color:var(--muted);padding:1px 14px;background:var(--panel)}#replybar{display:flex;align-items:center;gap:8px;padding:7px 12px;background:#fff;border-top:1px solid #ddd}#replysummary{flex:1;min-width:0;font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}#composer{display:flex;align-items:flex-end;gap:5px;padding:8px;background:var(--panel)}#message{flex:1;min-width:0;max-height:120px;resize:none;border:0;border-radius:22px;padding:12px 14px;outline-color:#128c7e;background:white}#send{width:43px;height:43px;flex-shrink:0;border:0;border-radius:50%;background:var(--green);color:white;font-size:19px}#fileInput{display:none}#recording{font-size:11px;color:#b42318;align-self:center;white-space:nowrap}.small-note{font-size:11px;color:var(--muted);padding:0 12px 6px;background:var(--panel)}#toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#263238;color:#fff;padding:10px 14px;border-radius:8px;font-size:13px;max-width:90vw;z-index:20;display:none}#toast.show{display:block}
+@media(min-width:600px){body{padding:15px 0}#app{height:calc(100dvh - 30px);border-radius:8px;box-shadow:0 2px 12px #0002}}
+</style>
+</head>
+<body>
+<section id="login"><div class="login-card"><div style="font-size:42px">💬</div><h1>Where We Belong</h1><p>A little place for just us ♡</p><form id="loginForm"><input class="field" id="email" type="email" placeholder="Email address" required autocomplete="username"><input class="field" id="password" type="password" placeholder="Password" required autocomplete="current-password"><button class="primary" type="submit">Log in</button></form><p id="error"></p></div></section>
+<main id="app" class="hidden">
+<header><div class="avatar">♡</div><div class="headtext"><strong>Where We Belong</strong><div id="status">Connecting…</div></div><button class="iconbtn" id="soundBtn" title="Sound notifications" aria-label="Sound notifications">🔔</button><button class="logout" id="logout">Log out</button></header>
+<div id="notice">Just us, in our own little world ♡</div>
+<section id="messages" aria-live="polite"></section><div id="typing"></div>
+<div id="replybar" class="hidden"><div id="replysummary"></div><button class="mini" id="cancelReply">Cancel</button></div>
+<form id="composer"><button class="iconbtn" type="button" id="attach" title="Attach photo or file" style="color:#54656f">＋</button><input id="fileInput" type="file" accept="image/*,audio/*,video/*,.pdf,.doc,.docx,.txt,.xlsx,.pptx"><button class="iconbtn" type="button" id="record" title="Record voice message" style="color:#54656f">🎤</button><span id="recording" class="hidden">Recording…</span><textarea id="message" rows="1" placeholder="Message" aria-label="Message"></textarea><button id="send" type="submit" aria-label="Send">➤</button></form><div class="small-note">Photos/files and voice notes require Firebase Storage to be enabled and its rules to allow these two accounts.</div>
+</main><div id="toast"></div>
+<script type="module">
+import {initializeApp} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+import {getAuth,signInWithEmailAndPassword,onAuthStateChanged,signOut} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+import {getDatabase,ref,push,set,update,remove,onChildAdded,onChildChanged,onChildRemoved,onValue,onDisconnect,serverTimestamp} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-database.js";
+import {getStorage,ref as storageRef,uploadBytes,getDownloadURL} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-storage.js";
+
+const firebaseConfig={apiKey:"AIzaSyBpa8Mr_4qdt7ETUtiI0wZDS0OW-EZ1884",authDomain:"where-we-belong-b25b1.firebaseapp.com",databaseURL:"https://where-we-belong-b25b1-default-rtdb.europe-west1.firebasedatabase.app",projectId:"where-we-belong-b25b1",storageBucket:"where-we-belong-b25b1.firebasestorage.app",messagingSenderId:"803513103263",appId:"1:803513103263:web:4252a04ddbbd6d1ac1c3aa",measurementId:"G-5QSSTNZQ7H"};
+const fb=initializeApp(firebaseConfig),auth=getAuth(fb),db=getDatabase(fb),storage=getStorage(fb);
+const $=id=>document.getElementById(id);
+let user=null,unsubs=[],replyTo=null,mediaRecorder=null,recordChunks=[],soundOn=false,audioCtx=null,seenInitial=false;
+const esc=s=>String(s??"");
+function toast(msg){$("toast").textContent=msg;$("toast").classList.add("show");setTimeout(()=>$("toast").classList.remove("show"),3200)}
+function err(msg){$("error").textContent=msg}
+function stopAll(){unsubs.forEach(fn=>{try{fn()}catch{}});unsubs=[]}
+function listen(unsub){unsubs.push(unsub)}
+function time(ts){return ts?new Date(ts).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"}):"sending…"}
+function safeFileName(name){return name.replace(/[^\w.\-() ]/g,"_").slice(0,100)||"attachment"}
+function playPing(){if(!soundOn)return;try{audioCtx ||= new (window.AudioContext||window.webkitAudioContext)();const osc=audioCtx.createOscillator(),gain=audioCtx.createGain();osc.connect(gain);gain.connect(audioCtx.destination);osc.frequency.value=880;gain.gain.value=.06;osc.start();osc.stop(audioCtx.currentTime+.13)}catch{}}
+function setReply(id,msg){replyTo={id,text:msg.text||msg.fileName||"Attachment",sender:msg.sender||"Message"};$("replysummary").textContent="Replying to "+replyTo.sender+": "+replyTo.text;$("replybar").classList.remove("hidden");$("message").focus()}
+function clearReply(){replyTo=null;$("replybar").classList.add("hidden")}
+function renderMessage(id,m,replace=false){
+ if(!m||!user)return;
+ let old=document.querySelector('[data-id="'+CSS.escape(id)+'"]');if(old)old.remove();
+ const b=document.createElement("article");b.className="bubble "+(m.uid===user.uid?"mine":"theirs");b.dataset.id=id;
+ if(m.uid!==user.uid){const s=document.createElement("div");s.className="sender";s.textContent=m.sender||"Us";b.appendChild(s)}
+ if(m.reply){const q=document.createElement("div");q.className="replyquote";const st=document.createElement("strong");st.textContent=m.reply.sender||"Reply";const tx=document.createElement("span");tx.textContent=m.reply.text||"Message";q.append(st,tx);b.appendChild(q)}
+ if(m.deleted){const d=document.createElement("i");d.className="msgtext";d.textContent="This message was deleted";b.appendChild(d)}
+ else {
+  if(m.kind==="image"&&m.url){const im=document.createElement("img");im.src=m.url;im.alt=m.fileName||"Shared image";im.loading="lazy";im.addEventListener("click",()=>window.open(m.url,"_blank","noopener"));b.appendChild(im)}
+  else if(m.kind==="audio"&&m.url){const au=document.createElement("audio");au.controls=true;au.src=m.url;au.className="voiceaudio";b.appendChild(au)}
+  else if(m.url){const a=document.createElement("a");a.className="filelink";a.href=m.url;a.target="_blank";a.rel="noopener";a.textContent="📎 "+(m.fileName||"Open attachment");b.appendChild(a)}
+  if(m.text){const tx=document.createElement("div");tx.className="msgtext";tx.textContent=m.text;b.appendChild(tx)}
+ }
+ const reactions=m.reactions||{};if(Object.keys(reactions).length){const rr=document.createElement("div");rr.className="reactions";const counts={};Object.values(reactions).forEach(v=>{if(v)counts[v]=(counts[v]||0)+1});Object.entries(counts).forEach(([emoji,count])=>{const x=document.createElement("span");x.className="reaction";x.textContent=emoji+" "+count;rr.appendChild(x)});b.appendChild(rr)}
+ const tm=document.createElement("div");tm.className="time";tm.textContent=(m.edited?"edited · ":"")+time(m.timestamp);b.appendChild(tm);
+ if(!m.deleted){const tools=document.createElement("div");tools.className="msgtools";
+  const reply=document.createElement("button");reply.className="mini";reply.textContent="↩ Reply";reply.onclick=()=>setReply(id,m);tools.appendChild(reply);
+  const react=document.createElement("button");react.className="mini";react.textContent="☺ React";react.onclick=()=>{const choice=prompt("Choose a reaction: ❤️ 😂 👍 😮 😢 🔥","❤️");if(choice&&["❤️","😂","👍","😮","😢","🔥","😍","👏"].includes(choice.trim()))update(ref(db,"messages/"+id+"/reactions"),{[user.uid]:choice.trim()}).catch(e=>toast(e.message))};tools.appendChild(react);
+  if(m.uid===user.uid){const edit=document.createElement("button");edit.className="mini";edit.textContent="✎ Edit";edit.onclick=()=>{if(!m.text){toast("Only text messages can be edited.");return}const v=prompt("Edit your message:",m.text);if(v!==null&&v.trim())update(ref(db,"messages/"+id),{text:v.trim(),edited:true}).catch(e=>toast(e.message))};tools.appendChild(edit);
+   const del=document.createElement("button");del.className="mini";del.textContent="Delete";del.onclick=()=>{if(confirm("Delete this message for both of you?"))update(ref(db,"messages/"+id),{deleted:true,text:"",url:null,fileName:null}).catch(e=>toast(e.message))};tools.appendChild(del)}
+  b.appendChild(tools)}
+ $("messages").appendChild(b);
+}
+function startChat(u){
+ stopAll();user=u;seenInitial=false;$("login").classList.add("hidden");$("app").classList.remove("hidden");$("messages").replaceChildren();$("status").textContent="Connecting…";
+ const messages=ref(db,"messages");
+ listen(onChildAdded(messages,s=>{const m=s.val();renderMessage(s.key,m);if(seenInitial&&m?.uid!==user.uid)playPing()},e=>toast("Messages: "+e.message)));
+ listen(onChildChanged(messages,s=>renderMessage(s.key,s.val(),true)));
+ listen(onChildRemoved(messages,s=>document.querySelector('[data-id="'+CSS.escape(s.key)+'"]')?.remove()));
+ setTimeout(()=>{seenInitial=true},1200);
+ const presence=ref(db,"presence/"+u.uid);
+ set(presence,{online:true,lastChanged:serverTimestamp()}).then(()=>onDisconnect(presence).set({online:false,lastChanged:serverTimestamp()})).catch(e=>toast("Presence: "+e.message));
+ listen(onValue(ref(db,"presence"),s=>{const vals=s.val()||{};const online=Object.entries(vals).some(([id,v])=>id!==u.uid&&v?.online);$("status").textContent=online?"Online":"Private chat"}));
+ listen(onValue(ref(db,"typing"),s=>{const vals=s.val()||{};const typing=Object.entries(vals).some(([id,v])=>id!==u.uid&&v===true);$("typing").textContent=typing?"Typing…":""}));
+}
+$("loginForm").addEventListener("submit",async e=>{e.preventDefault();err("");const btn=$("loginForm").querySelector("button");btn.disabled=true;btn.textContent="Logging in…";try{await signInWithEmailAndPassword(auth,$("email").value.trim(),$("password").value)}catch(x){err(x.code+": "+x.message)}finally{btn.disabled=false;btn.textContent="Log in"}});
+onAuthStateChanged(auth,u=>{if(u)startChat(u);else{stopAll();user=null;$("app").classList.add("hidden");$("login").classList.remove("hidden")}});
+$("composer").addEventListener("submit",async e=>{e.preventDefault();if(!user)return;const text=$("message").value.trim();if(!text)return;const btn=$("send");btn.disabled=true;try{const r=push(ref(db,"messages"));const m={uid:user.uid,sender:user.email||"Us",text,timestamp:serverTimestamp(),kind:"text"};if(replyTo)m.reply={...replyTo};await set(r,m);$("message").value="";clearReply();await set(ref(db,"typing/"+user.uid),false)}catch(x){toast("Message not sent: "+x.message)}finally{btn.disabled=false;$("message").focus()}});
+$("message").addEventListener("input",()=>{if(!user)return;set(ref(db,"typing/"+user.uid),$("message").value.length>0).catch(()=>{});clearTimeout(window.typingTimer);window.typingTimer=setTimeout(()=>{if(user)set(ref(db,"typing/"+user.uid),false).catch(()=>{})},1600)});
+$("cancelReply").onclick=clearReply;
+$("attach").onclick=()=>$("fileInput").click();
+$("fileInput").addEventListener("change",async e=>{const file=e.target.files?.[0];if(!file||!user)return;if(file.size>15*1024*1024){toast("Please choose a file smaller than 15 MB.");e.target.value="";return}
+ const btn=$("send");btn.disabled=true;toast("Uploading file…");
+ try{const name=Date.now()+"_"+safeFileName(file.name),path="chatUploads/"+user.uid+"/"+name,fr=storageRef(storage,path);await uploadBytes(fr,file);const url=await getDownloadURL(fr);const kind=file.type.startsWith("image/")?"image":file.type.startsWith("audio/")?"audio":"file";const r=push(ref(db,"messages"));const m={uid:user.uid,sender:user.email||"Us",text:"",timestamp:serverTimestamp(),kind,url,fileName:file.name,storagePath:path};if(replyTo)m.reply={...replyTo};await set(r,m);clearReply();toast("File sent")}
+ catch(x){toast("Upload failed: "+x.message+" — check Firebase Storage setup/rules")}
+ finally{btn.disabled=false;e.target.value=""}
+});
+$("record").addEventListener("click",async()=>{
+ if(!user)return;
+ if(mediaRecorder&&mediaRecorder.state==="recording"){mediaRecorder.stop();return}
+ if(!navigator.mediaDevices?.getUserMedia||!window.MediaRecorder){toast("Voice recording is not supported in this browser.");return}
+ try{const stream=await navigator.mediaDevices.getUserMedia({audio:true});recordChunks=[];mediaRecorder=new MediaRecorder(stream);mediaRecorder.ondataavailable=e=>{if(e.data.size)recordChunks.push(e.data)};mediaRecorder.onstop=async()=>{const blob=new Blob(recordChunks,{type:mediaRecorder.mimeType||"audio/webm"});stream.getTracks().forEach(t=>t.stop());$("recording").classList.add("hidden");$("record").textContent="🎤";if(!blob.size)return;try{toast("Uploading voice message…");const path="chatUploads/"+user.uid+"/"+Date.now()+"_voice.webm",sr=storageRef(storage,path);await uploadBytes(sr,blob);const url=await getDownloadURL(sr);const r=push(ref(db,"messages"));const m={uid:user.uid,sender:user.email||"Us",text:"",timestamp:serverTimestamp(),kind:"audio",url,fileName:"Voice message",storagePath:path};if(replyTo)m.reply={...replyTo};await set(r,m);clearReply();toast("Voice message sent")}catch(x){toast("Voice upload failed: "+x.message+" — check Firebase Storage setup/rules")}};
+ mediaRecorder.start();$("recording").classList.remove("hidden");$("record").textContent="⏹";toast("Recording started. Tap ⏹ to finish.")
+ }catch(x){toast("Microphone permission denied or unavailable: "+x.message)}
+});
+$("logout").addEventListener("click",async()=>{if(user){await set(ref(db,"typing/"+user.uid),false).catch(()=>{});await set(ref(db,"presence/"+user.uid),{online:false,lastChanged:serverTimestamp()}).catch(()=>{})}await signOut(auth)});
+$("soundBtn").addEventListener("click",async()=>{soundOn=!soundOn;$("soundBtn").textContent=soundOn?"🔔":"🔕";if(soundOn){try{audioCtx ||= new (window.AudioContext||window.webkitAudioContext)();await audioCtx.resume();playPing();toast("Sound notifications enabled while this page is open")}catch{toast("Sound could not be enabled")}}else toast("Sound notifications muted")});
+$("message").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();$("composer").requestSubmit()}});
+</script>
+</body>
+</html>
