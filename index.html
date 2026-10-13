@@ -393,11 +393,6 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();  
 const db = firebase.database();  
   
-const allowedUsers = [  
-  "THUCBdlzXdf24tJglhi8jYSVFaR2",  
-  "ZFepStVL7uMwTi6zrOP8tx3Oyuh1"  
-];  
-  
 const loginPanel = document.getElementById("login");  
 const chatPanel = document.getElementById("chat");  
 const loginStatus = document.getElementById("loginStatus");  
@@ -431,7 +426,7 @@ let activeReply = null;
 let initialLoadDone = false;  
 
 function getPartnerUid() {  
-  return allowedUsers.find(uid => uid !== currentUid);  
+  return currentUid === "THUCBdlzXdf24tJglhi8jYSVFaR2" ? "ZFepStVL7uMwTi6zrOP8tx3Oyuh1" : "THUCBdlzXdf24tJglhi8jYSVFaR2";  
 }  
   
 function showLogin(message = "") {  
@@ -568,7 +563,6 @@ function startMessages() {
         ? new Date(timestamp).toLocaleString()  
         : "Just now";  
   
-      // Explicitly changed labels to "Me" and "You"  
       const senderLabel = message.senderUid === currentUid ? "Me" : "You";  
       const metaSpan = document.createElement("span");  
       metaSpan.textContent = senderLabel + " · " + dateText;  
@@ -667,7 +661,7 @@ function requestNotificationPermission() {
 function triggerNotification(text) {  
   if (!("Notification" in window) || Notification.permission !== "granted") return;  
   if (document.hidden) {  
-    new Notification("New message from You", {  
+    new Notification("New message", {  
       body: text.length > 50 ? text.substring(0, 50) + "..." : text,  
       icon: "https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"  
     });  
@@ -700,7 +694,7 @@ fileInput.onchange = async () => {
       };  
       if (activeReply) {  
         messageData.replyTo = activeReply;  
-      }  
+      }
       await db.ref("messages").push(messageData);  
       hideReplyPreview();  
       fileInput.value = "";  
@@ -716,7 +710,7 @@ fileInput.onchange = async () => {
 };  
   
 function startChatFeatures() {  
-  if (!auth.currentUser || !allowedUsers.includes(auth.currentUser.uid)) return;  
+  if (!auth.currentUser) return;  
   currentUid = auth.currentUser.uid;  
   connectionStatus.textContent = "Connecting...";  
   chatStatus.textContent = "";  
@@ -734,14 +728,10 @@ document.getElementById("loginForm").addEventListener("submit", async event => {
   loginStatus.textContent = "Signing in...";  
   
   try {  
-    const result = await auth.signInWithEmailAndPassword(  
+    await auth.signInWithEmailAndPassword(  
       document.getElementById("email").value.trim(),  
       document.getElementById("password").value  
     );  
-    if (!allowedUsers.includes(result.user.uid)) {  
-      await auth.signOut();  
-      loginStatus.textContent = "This account is not allowed.";  
-    }  
   } catch (error) {  
     loginStatus.textContent = "Could not sign in. Check your email and password.";  
     console.error(error);  
@@ -751,4 +741,55 @@ document.getElementById("loginForm").addEventListener("submit", async event => {
 });  
   
 document.getElementById("sendForm").addEventListener("submit", async event => {  
+  event.preventDefault();  
+  const message = messageInput.value.trim();  
+  if (!message || !auth.currentUser) return;  
   
+  sendButton.disabled = true;  
+  chatStatus.textContent = "";  
+  
+  try {  
+    const messageData = {  
+      text: message,  
+      senderUid: auth.currentUser.uid,  
+      createdAt: firebase.database.ServerValue.TIMESTAMP  
+    };  
+  
+    if (activeReply) {  
+      messageData.replyTo = activeReply;  
+    }  
+  
+    await db.ref("messages").push(messageData);  
+  
+    messageInput.value = "";  
+    hideReplyPreview();  
+    if (myTypingRef) await myTypingRef.set(false);  
+    messageInput.focus();  
+  } catch (error) {  
+    chatStatus.textContent = "Message not sent. Please try again.";  
+    console.error(error);  
+  } finally {  
+    sendButton.disabled = false;  
+  }  
+});  
+  
+document.getElementById("logout").addEventListener("click", async () => {  
+  stopChatFeatures();  
+  await auth.signOut();  
+});  
+  
+auth.onAuthStateChanged(user => {  
+  if (user) {  
+    showChat();  
+  } else {  
+    stopChatFeatures();  
+    showLogin();  
+  }  
+});  
+  
+window.addEventListener("beforeunload", () => {  
+  if (myTypingRef) myTypingRef.remove();  
+});  
+</script>  
+</body>  
+</html>
