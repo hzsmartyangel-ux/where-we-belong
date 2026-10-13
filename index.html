@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -101,9 +102,7 @@ button:disabled {
   gap: 10px;
 }
 
-#chatHeader h2 {
-  margin: 0 0 6px;
-}
+#chatHeader h2 { margin: 0 0 6px; }
 
 #chatHeader .small {
   text-align: left;
@@ -139,7 +138,7 @@ button:disabled {
 }
 
 .message {
-  max-width: 85%;
+  max-width: 90%;
   width: fit-content;
   padding: 10px 12px;
   margin: 9px 0;
@@ -168,11 +167,93 @@ button:disabled {
   font-size: 15px;
 }
 
+.replyQuote {
+  border-left: 3px solid #008f75;
+  background: #e9edef;
+  padding: 7px 9px;
+  margin-bottom: 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  color: #44545c;
+  overflow-wrap: anywhere;
+}
+
+.mine .replyQuote {
+  background: #c6edc0;
+}
+
+.replyQuote strong {
+  display: block;
+  margin-bottom: 3px;
+}
+
+.messageActions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 3px;
+  margin-top: 7px;
+}
+
+.messageActions button {
+  width: auto;
+  margin: 0;
+  padding: 5px 7px;
+  border: 1px solid #dfe5e8;
+  background: #fff;
+  color: #33434a;
+  border-radius: 15px;
+  font-size: 13px;
+  font-weight: normal;
+}
+
+.messageActions button:hover {
+  background: #e6f4ef;
+}
+
+.messageActions button.selectedReaction {
+  background: #c8f2df;
+  border-color: #008f75;
+}
+
+.messageActions .replyButton {
+  font-size: 12px;
+  padding: 6px 9px;
+}
+
 #typingStatus {
   min-height: 17px;
   font-size: 12px;
   color: #008f75;
   padding: 4px 2px;
+}
+
+#replyPreview {
+  display: none;
+  background: #e5f4ed;
+  border-left: 4px solid #008f75;
+  padding: 9px 10px;
+  margin: 7px 0;
+  border-radius: 5px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+#replyPreviewText {
+  font-size: 12px;
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+
+#cancelReply {
+  width: auto;
+  flex-shrink: 0;
+  margin: 0;
+  padding: 6px 10px;
+  background: #d4e5dd;
+  color: #263b33;
+  font-size: 12px;
 }
 
 #sendRow {
@@ -221,7 +302,7 @@ footer {
     min-height: 260px;
   }
 
-  .message { max-width: 91%; }
+  .message { max-width: 95%; }
 }
 </style>
 </head>
@@ -265,6 +346,11 @@ footer {
     <div id="messages" aria-live="polite"></div>
     <div id="typingStatus"></div>
 
+    <div id="replyPreview">
+      <div id="replyPreviewText"></div>
+      <button id="cancelReply" type="button">Cancel</button>
+    </div>
+
     <form id="sendForm">
       <div id="sendRow">
         <input id="messageInput"
@@ -288,7 +374,7 @@ footer {
 
 <script>
 const firebaseConfig = {
-  apiKey: "AIzaSyBpa8Mr_4qdt7ETUtiI0wZDS0OW-EZ1884",
+  apiKey: "AIzaSyBpa8Mr_4qdt7ETUti0I0wZDS0OW-EZ1884",
   authDomain: "where-we-belong-b25b1.firebaseapp.com",
   databaseURL: "https://where-we-belong-b25b1-default-rtdb.europe-west1.firebasedatabase.app",
   projectId: "where-we-belong-b25b1",
@@ -318,6 +404,10 @@ const sendButton = document.getElementById("sendButton");
 const connectionStatus = document.getElementById("status");
 const partnerStatus = document.getElementById("partnerStatus");
 const typingStatus = document.getElementById("typingStatus");
+const replyPreview = document.getElementById("replyPreview");
+const replyPreviewText = document.getElementById("replyPreviewText");
+
+const reactionEmojis = ["❤️", "😂", "😍", "😮", "👍"];
 
 let messagesRef = null;
 let messagesListener = null;
@@ -328,8 +418,10 @@ let typingListener = null;
 let myTypingRef = null;
 let presenceRef = null;
 let connectedRef = null;
+let connectedListener = null;
 let typingTimer = null;
 let currentUid = null;
+let replyingTo = null;
 
 function getPartnerUid() {
   return allowedUsers.find(uid => uid !== currentUid);
@@ -348,20 +440,33 @@ function showChat() {
 }
 
 function stopListener(ref, event, callback) {
-  if (ref && callback) ref.off(event, callback);
+  if (ref && callback) {
+    ref.off(event, callback);
+  }
+}
+
+function clearReply() {
+  replyingTo = null;
+  replyPreview.style.display = "none";
+  replyPreviewText.textContent = "";
 }
 
 function stopChatFeatures() {
   stopListener(messagesRef, "value", messagesListener);
   stopListener(partnerRef, "value", partnerListener);
   stopListener(typingRef, "value", typingListener);
-  stopListener(connectedRef, "value", null);
+  stopListener(connectedRef, "value", connectedListener);
 
   if (typingTimer) clearTimeout(typingTimer);
 
-  if (myTypingRef) myTypingRef.remove().catch(() => {});
-  if (presenceRef) presenceRef.onDisconnect().cancel().catch(() => {});
-  if (presenceRef) presenceRef.remove().catch(() => {});
+  if (myTypingRef) {
+    myTypingRef.remove().catch(() => {});
+  }
+
+  if (presenceRef) {
+    presenceRef.onDisconnect().cancel().catch(() => {});
+    presenceRef.remove().catch(() => {});
+  }
 
   messagesRef = null;
   messagesListener = null;
@@ -372,19 +477,22 @@ function stopChatFeatures() {
   myTypingRef = null;
   presenceRef = null;
   connectedRef = null;
+  connectedListener = null;
   typingTimer = null;
   currentUid = null;
 
+  clearReply();
   messagesBox.replaceChildren();
   typingStatus.textContent = "";
   partnerStatus.textContent = "";
+  messageInput.value = "";
 }
 
 function startPresence() {
   presenceRef = db.ref("status/" + currentUid);
   connectedRef = db.ref(".info/connected");
 
-  connectedRef.on("value", snapshot => {
+  connectedListener = snapshot => {
     if (snapshot.val() !== true || !auth.currentUser) return;
 
     presenceRef.onDisconnect().set({
@@ -396,7 +504,9 @@ function startPresence() {
         lastSeen: firebase.database.ServerValue.TIMESTAMP
       });
     }).catch(error => console.error(error));
-  });
+  };
+
+  connectedRef.on("value", connectedListener);
 }
 
 function startPartnerStatus() {
@@ -406,11 +516,8 @@ function startPartnerStatus() {
   partnerListener = snapshot => {
     const data = snapshot.val();
 
-    if (data && data.online === true) {
-      partnerStatus.textContent = "Online";
-    } else {
-      partnerStatus.textContent = "Offline";
-    }
+    partnerStatus.textContent =
+      data && data.online === true ? "Online" : "Offline";
   };
 
   partnerRef.on("value", partnerListener);
@@ -428,8 +535,6 @@ function startTypingIndicator() {
   };
 
   typingRef.on("value", typingListener);
-
-  messageInput.addEventListener("input", handleTyping);
 }
 
 function handleTyping() {
@@ -441,8 +546,101 @@ function handleTyping() {
   if (typingTimer) clearTimeout(typingTimer);
 
   typingTimer = setTimeout(() => {
-    if (myTypingRef) myTypingRef.set(false).catch(() => {});
+    if (myTypingRef) {
+      myTypingRef.set(false).catch(() => {});
+    }
   }, 1500);
+}
+
+messageInput.addEventListener("input", handleTyping);
+
+function makeButton(label, className, action, key, emoji = "") {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.textContent = label;
+  button.className = className;
+  button.dataset.action = action;
+  button.dataset.key = key;
+
+  if (emoji) button.dataset.emoji = emoji;
+
+  return button;
+}
+
+function renderMessage(key, message) {
+  const bubble = document.createElement("div");
+  bubble.className = "message" +
+    (message.senderUid === currentUid ? " mine" : "");
+
+  const meta = document.createElement("div");
+  meta.className = "meta";
+
+  const timestamp = Number(message.createdAt);
+  const dateText = Number.isFinite(timestamp) && timestamp > 0
+    ? new Date(timestamp).toLocaleString()
+    : "Just now";
+
+  meta.textContent =
+    (message.senderUid === currentUid ? "You" : "Partner")
+    + " · " + dateText;
+
+  bubble.appendChild(meta);
+
+  if (message.replyTo && typeof message.replyTo.text === "string") {
+    const quote = document.createElement("div");
+    quote.className = "replyQuote";
+
+    const quoteSender = document.createElement("strong");
+    quoteSender.textContent =
+      message.replyTo.senderUid === currentUid ? "You" : "Partner";
+
+    const quoteText = document.createElement("div");
+    quoteText.textContent = message.replyTo.text;
+
+    quote.append(quoteSender, quoteText);
+    bubble.appendChild(quote);
+  }
+
+  const content = document.createElement("div");
+  content.className = "messageText";
+  content.textContent = message.text;
+  bubble.appendChild(content);
+
+  const actions = document.createElement("div");
+  actions.className = "messageActions";
+
+  const reactions = message.reactions || {};
+
+  reactionEmojis.forEach(emoji => {
+    const count = Object.values(reactions)
+      .filter(value => value === emoji).length;
+
+    const mine = reactions[currentUid] === emoji;
+    const label = emoji + (count > 0 ? " " + count : "");
+
+    const button = makeButton(
+      label,
+      mine ? "selectedReaction" : "",
+      "react",
+      key,
+      emoji
+    );
+
+    button.setAttribute("aria-label", "React with " + emoji);
+    actions.appendChild(button);
+  });
+
+  const replyButton = makeButton(
+    "↩ Reply",
+    "replyButton",
+    "reply",
+    key
+  );
+
+  actions.appendChild(replyButton);
+  bubble.appendChild(actions);
+
+  return bubble;
 }
 
 function startMessages() {
@@ -459,28 +657,7 @@ function startMessages() {
 
       if (!message || typeof message.text !== "string") return;
 
-      const bubble = document.createElement("div");
-      bubble.className = "message" +
-        (message.senderUid === currentUid ? " mine" : "");
-
-      const meta = document.createElement("div");
-      meta.className = "meta";
-
-      const timestamp = Number(message.createdAt);
-      const dateText = Number.isFinite(timestamp) && timestamp > 0
-        ? new Date(timestamp).toLocaleString()
-        : "Just now";
-
-      meta.textContent =
-        (message.senderUid === currentUid ? "You" : "Partner")
-        + " · " + dateText;
-
-      const content = document.createElement("div");
-      content.className = "messageText";
-      content.textContent = message.text;
-
-      bubble.append(meta, content);
-      messagesBox.appendChild(bubble);
+      messagesBox.appendChild(renderMessage(child.key, message));
     });
 
     messagesBox.scrollTop = messagesBox.scrollHeight;
@@ -494,10 +671,74 @@ function startMessages() {
   });
 }
 
+messagesBox.addEventListener("click", async event => {
+  const button = event.target.closest("button[data-action]");
+  if (!button || !currentUid || !auth.currentUser) return;
+
+  const key = button.dataset.key;
+  const action = button.dataset.action;
+
+  if (!key) return;
+
+  if (action === "reply") {
+    const snapshot = await db.ref("messages/" + key).get();
+    const message = snapshot.val();
+
+    if (!message || typeof message.text !== "string") {
+      chatStatus.textContent = "This message is no longer available.";
+      return;
+    }
+
+    replyingTo = {
+      key: key,
+      text: message.text,
+      senderUid: message.senderUid || ""
+    };
+
+    replyPreviewText.textContent =
+      "Replying to " +
+      (message.senderUid === currentUid ? "your message: " : "partner: ") +
+      message.text;
+
+    replyPreview.style.display = "flex";
+    messageInput.focus();
+    return;
+  }
+
+  if (action === "react") {
+    const emoji = button.dataset.emoji;
+    if (!reactionEmojis.includes(emoji)) return;
+
+    const reactionRef = db.ref(
+      "messages/" + key + "/reactions/" + currentUid
+    );
+
+    try {
+      const snapshot = await reactionRef.get();
+
+      if (snapshot.val() === emoji) {
+        await reactionRef.remove();
+      } else {
+        await reactionRef.set(emoji);
+      }
+
+      chatStatus.textContent = "";
+    } catch (error) {
+      chatStatus.textContent = "Reaction not saved. Please try again.";
+      console.error(error);
+    }
+  }
+});
+
+document.getElementById("cancelReply").addEventListener(
+  "click", clearReply
+);
+
 function startChatFeatures() {
   if (!auth.currentUser ||
       !allowedUsers.includes(auth.currentUser.uid)) return;
 
+  stopChatFeatures();
   currentUid = auth.currentUser.uid;
 
   connectionStatus.textContent = "Connecting...";
@@ -541,23 +782,38 @@ document.getElementById("sendForm").addEventListener(
   "submit", async event => {
     event.preventDefault();
 
-    const message = messageInput.value.trim();
+    const text = messageInput.value.trim();
 
-    if (!message || !auth.currentUser ||
+    if (!text || !auth.currentUser ||
         !allowedUsers.includes(auth.currentUser.uid)) return;
 
     sendButton.disabled = true;
     chatStatus.textContent = "";
 
+    const newMessage = {
+      text: text,
+      senderUid: auth.currentUser.uid,
+      createdAt: firebase.database.ServerValue.TIMESTAMP
+    };
+
+    if (replyingTo) {
+      newMessage.replyTo = {
+        key: replyingTo.key,
+        text: replyingTo.text,
+        senderUid: replyingTo.senderUid
+      };
+    }
+
     try {
-      await db.ref("messages").push({
-        text: message,
-        senderUid: auth.currentUser.uid,
-        createdAt: firebase.database.ServerValue.TIMESTAMP
-      });
+      await db.ref("messages").push(newMessage);
 
       messageInput.value = "";
-      if (myTypingRef) await myTypingRef.set(false);
+      clearReply();
+
+      if (myTypingRef) {
+        await myTypingRef.set(false);
+      }
+
       messageInput.focus();
     } catch (error) {
       chatStatus.textContent =
