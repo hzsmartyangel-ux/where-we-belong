@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#075e54">
+<title>Where We Belong</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,sans-serif;background:#e9edef;color:#111b21}
+.app{max-width:700px;height:100dvh;margin:auto;background:#efeae2;display:flex;flex-direction:column;overflow:hidden}
+.header{background:#075e54;color:white;padding:12px 16px;display:flex;align-items:center;gap:12px}
+.avatar{width:44px;height:44px;border-radius:50%;background:#d9fdd3;color:#075e54;display:grid;place-items:center;font-size:22px;font-weight:bold}
+.header h2{font-size:18px;margin:0 0 5px}
+.header small{color:#d6f5ed}
+.screen{padding:24px;flex:1;display:flex;flex-direction:column;justify-content:center;gap:12px}
+input,button{font:inherit;border-radius:8px;padding:13px;border:1px solid #ccc}
+input{width:100%;background:white;color:#111}
+button{border:0;background:#075e54;color:white;cursor:pointer}
+button:disabled{opacity:.6}
+.secondary{background:transparent;color:#075e54;padding:7px}
+.error{color:#b42318;font-size:14px;overflow-wrap:anywhere;white-space:pre-wrap}
+.hidden{display:none!important}
+#chatScreen{flex:1;min-height:0;display:flex;flex-direction:column}
+#messages{flex:1;min-height:0;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:9px;background:#efeae2}
+.message{max-width:85%;padding:9px 12px;border-radius:9px;background:white;align-self:flex-start;overflow-wrap:anywhere;white-space:pre-wrap;box-shadow:0 1px 1px #0001}
+.message.mine{align-self:flex-end;background:#d9fdd3}
+.sender{font-size:12px;color:#075e54;font-weight:bold;margin-bottom:5px}
+.time{font-size:10px;color:#667781;text-align:right;margin-top:5px}
+.composer{display:flex;gap:8px;padding:10px;background:#f0f2f5}
+.composer input{border:0;border-radius:25px;min-width:0}
+.composer button{border-radius:50%;width:48px;flex-shrink:0;font-size:20px;padding:8px}
+.notice{text-align:center;color:#667781;font-size:13px;padding:8px}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="header">
+    <div class="avatar">W</div>
+    <div>
+      <h2>Where We Belong</h2>
+      <small id="status">A little place for us</small>
+    </div>
+  </header>
+
+  <section id="loginScreen" class="screen">
+    <h2>Welcome back ❤️</h2>
+    <p>Sign in to enter our private space.</p>
+    <input id="email" type="email" placeholder="Email address" autocomplete="username">
+    <input id="password" type="password" placeholder="Password" autocomplete="current-password">
+    <button id="loginBtn">Sign in</button>
+    <button id="resetBtn" class="secondary">Forgot password?</button>
+    <p id="loginError" class="error"></p>
+  </section>
+
+  <section id="chatScreen" class="hidden">
+    <div class="notice">Our little space, just for us ❤️</div>
+    <div id="messages"></div>
+    <p id="chatError" class="error" style="padding:0 12px"></p>
+    <form id="messageForm" class="composer">
+      <input id="messageInput" placeholder="Type a message..." maxlength="4000" autocomplete="off">
+      <button id="sendBtn" type="submit" aria-label="Send">➤</button>
+    </form>
+    <button id="logoutBtn" style="border-radius:0">Log out</button>
+  </section>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+import {
+  getAuth, signInWithEmailAndPassword, sendPasswordResetEmail,
+  onAuthStateChanged, signOut
+} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+import {
+  getDatabase, ref, push, onChildAdded, serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBpa8Mr_4qdt7ETUtiI0wZDS0OW-EZ1884",
+  authDomain: "where-we-belong-b25b1.firebaseapp.com",
+  databaseURL: "https://where-we-belong-b25b1-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "where-we-belong-b25b1",
+  storageBucket: "where-we-belong-b25b1.firebasestorage.app",
+  messagingSenderId: "803513103263",
+  appId: "1:803513103263:web:4252a04ddbbd6d1ac1c3aa",
+  measurementId: "G-5QSSTNZQ7H"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getDatabase(app);
+const $ = id => document.getElementById(id);
+const messagesBox = $("messages");
+
+let stopMessages = null;
+let currentUid = null;
+
+function explainError(error) {
+  const messages = {
+    "auth/invalid-credential": "Email or password is incorrect.",
+    "auth/user-not-found": "No account was found with this email.",
+    "auth/wrong-password": "Incorrect password.",
+    "auth/invalid-email": "Enter a valid email address.",
+    "auth/too-many-requests": "Too many attempts. Please wait and try again.",
+    "auth/network-request-failed": "Connection problem. Check your internet.",
+    "auth/unauthorized-domain": "This website domain is not authorized in Firebase Authentication.",
+    "auth/operation-not-allowed": "Email/password sign-in is not enabled in Firebase."
+  };
+  return (messages[error.code] || error.message || "Something went wrong.") +
+    " [" + (error.code || "unknown error") + "]";
+}
+
+function showLogin() {
+  $("loginScreen").classList.remove("hidden");
+  $("chatScreen").classList.add("hidden");
+  $("status").textContent = "A little place for us";
+}
+
+function showChat(user) {
+  $("loginScreen").classList.add("hidden");
+  $("chatScreen").classList.remove("hidden");
+  $("status").textContent = user.email || "Connected";
+  $("loginError").textContent = "";
+  $("chatError").textContent = "";
+}
+
+function formatTime(timestamp) {
+  if (!timestamp) return "";
+  return new Date(timestamp).toLocaleTimeString([], {
+    hour: "2-digit", minute: "2-digit"
+  });
+}
+
+function addMessage(snapshot) {
+  const item = snapshot.val();
+  if (!item || typeof item.text !== "string") return;
+
+  const wrapper = document.createElement("div");
+  wrapper.className = "message" + (item.uid === currentUid ? " mine" : "");
+
+  const sender = document.createElement("div");
+  sender.className = "sender";
+  sender.textContent = item.uid === currentUid ? "You" : (item.email || "Message");
+
+  const body = document.createElement("div");
+  body.textContent = item.text;
+
+  const time = document.createElement("div");
+  time.className = "time";
+  time.textContent = formatTime(item.timestamp);
+
+  wrapper.append(sender, body, time);
+  messagesBox.appendChild(wrapper);
+  messagesBox.scrollTop = messagesBox.scrollHeight;
+}
+
+function startMessages(user) {
+  if (stopMessages) stopMessages();
+  messagesBox.replaceChildren();
+  currentUid = user.uid;
+
+  stopMessages = onChildAdded(ref(db, "privateMessages"), addMessage, error => {
+    $("chatError").textContent = explainError(error);
+  });
+}
+
+$("loginBtn").addEventListener("click", async () => {
+  $("loginError").textContent = "";
+  const email = $("email").value.trim();
+  const password = $("password").value;
+
+  if (!email || !password) {
+    $("loginError").textContent = "Enter your email and password.";
+    return;
+  }
+
+  $("loginBtn").disabled = true;
+  $("loginBtn").textContent = "Signing in...";
+  try {
+    await signInWithEmailAndPassword(auth, email, password);
+  } catch (error) {
+    $("loginError").textContent = explainError(error);
+  } finally {
+    $("loginBtn").disabled = false;
+    $("loginBtn").textContent = "Sign in";
+  }
+});
+
+$("password").addEventListener("keydown", event => {
+  if (event.key === "Enter") $("loginBtn").click();
+});
+
+$("resetBtn").addEventListener("click", async () => {
+  $("loginError").textContent = "";
+  const email = $("email").value.trim();
+  if (!email) {
+    $("loginError").textContent = "Enter your email first, then press Forgot password.";
+    return;
+  }
+  try {
+    await sendPasswordResetEmail(auth, email);
+    $("loginError").textContent = "Password reset email sent. Check your inbox.";
+  } catch (error) {
+    $("loginError").textContent = explainError(error);
+  }
+});
+
+$("messageForm").addEventListener("submit", async event => {
+  event.preventDefault();
+  $("chatError").textContent = "";
+  const user = auth.currentUser;
+  const text = $("messageInput").value.trim();
+  if (!user || !text) return;
+
+  $("sendBtn").disabled = true;
+  try {
+    await push(ref(db, "privateMessages"), {
+      uid: user.uid,
+      email: user.email || "",
+      text,
+      timestamp: serverTimestamp()
+    });
+    $("messageInput").value = "";
+    $("messageInput").focus();
+  } catch (error) {
+    $("chatError").textContent = explainError(error);
+  } finally {
+    $("sendBtn").disabled = false;
+  }
+});
+
+$("logoutBtn").addEventListener("click", async () => {
+  try {
+    await signOut(auth);
+  } catch (error) {
+    $("chatError").textContent = explainError(error);
+  }
+});
+
+onAuthStateChanged(auth, user => {
+  if (user) {
+    showChat(user);
+    startMessages(user);
+  } else {
+    if (stopMessages) stopMessages();
+    stopMessages = null;
+    currentUid = null;
+    messagesBox.replaceChildren();
+    showLogin();
+  }
+});
+</script>
+</body>
+</html>
