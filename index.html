@@ -149,7 +149,6 @@ button:disabled {
   overflow-wrap: anywhere;  
   box-shadow: 0 1px 1px #00000008;  
   position: relative;  
-  user-select: none;  
 }  
   
 .mine {  
@@ -694,8 +693,7 @@ function startMessages() {
       }  
       bubble.appendChild(reactionsDiv);  
 
-      // --- WhatsApp-style 2-Second Long Press for Reactions ---
-      let pressTimer = null;
+      // --- WhatsApp-style Long Press (Context Menu) for Reactions ---
       const showEmojiPicker = (e) => {
         e.preventDefault();
         document.querySelectorAll(".whatsapp-emoji-popup").forEach(p => p.remove());
@@ -742,26 +740,8 @@ function startMessages() {
         setTimeout(() => document.addEventListener("click", closeHandler), 10);
       };
 
-      bubble.addEventListener("touchstart", () => {
-        pressTimer = setTimeout(() => showEmojiPicker(event), 2000);
-      });
-      bubble.addEventListener("touchend", () => {
-        if (pressTimer) clearTimeout(pressTimer);
-      });
-      bubble.addEventListener("touchmove", () => {
-        if (pressTimer) clearTimeout(pressTimer);
-      });
-
-      bubble.addEventListener("mousedown", () => {
-        pressTimer = setTimeout(() => showEmojiPicker(event), 2000);
-      });
-      bubble.addEventListener("mouseup", () => {
-        if (pressTimer) clearTimeout(pressTimer);
-      });
-      bubble.addEventListener("mouseleave", () => {
-        if (pressTimer) clearTimeout(pressTimer);
-      });
-      // ---------------------------------------------------------
+      bubble.addEventListener("contextmenu", showEmojiPicker);
+      // -------------------------------------------------------------
   
       messagesBox.appendChild(bubble);  
     });  
